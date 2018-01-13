@@ -4,14 +4,6 @@ Walmart Open API
 This is a wrapper library around the [WalmartLabs Developer Library](https://developer.walmartlabs.com).
 To access this library you will need a developer key.
 
-## Installation
-
-To install the library:
-
-```
-% npm install walmart --save
-```
-
 ## Usage
 
 First include the library:
@@ -108,3 +100,17 @@ Returns an array of items of the value of the day items on the specified categor
 ### walmart.feeds.trending(categoryId)
 
 Returns an array of items of the trending items on the specified category.
+
+## Development
+
+### Project Setup
+1. Install [Node js 8.9.4](https://nodejs.org/en/)
+2. Clone and cd into the project and install it's dependencies:
+  ```
+  npm install
+  ```
+3. Create a `.env` file in the project root directory and add `WALMART_API_KEY=YOUR_API_KEY` to the file. This sets your api key as an environment variable.
+4. Test the project is working by running the example queries in your terminal:
+  ```
+  node examples/simple.js
+  ```

@@ -10,7 +10,7 @@
   "_inCache": true,
   "_installable": true,
   "_location": "/walmart",
-  "_nodeVersion": "0.12.7",
+  "_nodeVersion": "8.9.4",
   "_npmUser": {
     "email": "jherrington@walmartlabs.com",
     "name": "walmartreact"
@@ -45,7 +45,9 @@
   ],
   "dependencies": {
     "bluebird": "^2.9.34",
-    "isomorphic-fetch": "^2.1.1"
+    "dotenv": "^4.0.0",
+    "isomorphic-fetch": "^2.1.1",
+    "walmart": "0.0.4"
   },
   "description": "Walmart API wrapper",
   "devDependencies": {
@@ -72,7 +74,7 @@
       "email": "jherrington@walmartlabs.com"
     }
   ],
-  "name": "walmart",
+  "name": "clearance_savings",
   "optionalDependencies": {},
   "readme": "ERROR: No README data found!",
   "scripts": {
