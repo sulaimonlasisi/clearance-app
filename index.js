@@ -2,13 +2,16 @@ var fetch = require('isomorphic-fetch');
 var Promise = require('bluebird');
 
 function _responseToText(response) {
-  if (response.status >= 400) throw new Error("Bad server response");
+  if (response.status >= 400) {
+    throw new Error("Bad server response");
+  }
   return response.text();
 }
 
 function _get(options, url) {
   return new Promise(function (resolve, reject) {
     var getUrl = (options && options.protocol) ? options.protocol + ":" + url : url;
+    debugger;
     fetch(getUrl).then(_responseToText).then(function(item) {
       resolve(JSON.parse(item));
     }).catch(function(err) {
@@ -23,6 +26,45 @@ function _feed(options, feed, key, category) {
     url += "&categoryId=" + category;
   }
   return _get(options, url);
+}
+
+function _paginate(options, category, brand, key, specialOffer, callback) {
+  var url = "//api.walmartlabs.com/v1/paginated/items?apiKey=" + key;
+  if (category) {
+    url += "&category=" + category;
+  }
+  if (brand) {
+    url += "&brand=" + brand;
+  }
+  if (specialOffer) {
+    url += "&specialOffer=" + specialOffer;
+  }
+  //so far there can only be one special offer e.g. clearance, rollback, specialbuy
+  /*if (extras) {
+    for (var k in extras) {
+      url += "&" + k + "=" + escape(extras[k]);
+    }
+  }*/
+  if (options && options.nextPage) {
+    url =  "//api.walmartlabs.com" + options.nextPage;
+  }
+  return _get(options, url).then(function(response) {
+      if (response.nextPage) {
+        options = options || {};
+        options.nextPage = response.nextPage;
+        response.next = function() {
+          _paginate(options, null, null, null, null, callback);
+        }
+      }
+      callback(response);
+      return response;
+  });
+}
+
+function _callback(arg) {
+  var args = [].slice.call(arg),
+      callback = typeof args[args.length - 1] === 'function' && args.pop() || function() {};
+  return callback;
 }
 
 module.exports = function(key, options) {
@@ -100,6 +142,12 @@ module.exports = function(key, options) {
         }
         return _get({}, url);
       }
+    },
+    paginateByCategory: function(category, specialOffer) {
+      return _paginate(options, category, null, key, specialOffer, _callback(arguments));
+    },
+    paginateByBrand: function(brand, extras, callback) {
+      return _paginate(options, null, brand, key, specialOffer, _callback(arguments));
     }
   }
 };
