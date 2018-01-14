@@ -2,7 +2,9 @@ var fetch = require('isomorphic-fetch');
 var Promise = require('bluebird');
 
 function _responseToText(response) {
-  if (response.status >= 400) throw new Error("Bad server response");
+  if (response.status >= 400) {
+    throw new Error("Bad server response");
+  }
   return response.text();
 }
 
@@ -39,6 +41,7 @@ module.exports = function(key, options) {
     },
     feeds: {
       items: function(categoryId) {
+        //so far, this requires extra permissions to use.
         return _feed(options, "items", key, categoryId);
       },
       bestSellers: function(categoryId) {
@@ -100,6 +103,13 @@ module.exports = function(key, options) {
         }
         return _get({}, url);
       }
+    }, 
+    getSpecifiedFeed: function(feed_and_cat_id) {
+      //this is easier to loop through for different feeds
+      //feed options include clearance, rollback, specialbuy, preorder, bestsellers
+      feed = feed_and_cat_id.split(',')[0]
+      categoryId = parseInt(feed_and_cat_id.split(',')[1])
+      return _feed(options, feed, key, categoryId);
     }
   }
 };
