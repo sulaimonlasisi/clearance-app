@@ -46,7 +46,6 @@ function writeCategoryIdsToFile(){
   walmart.taxonomy().then(function(data){
     data.categories.forEach(function(category){
       var cat_info = category.name + ',' + category.id+'\n';
-
       fs.appendFileSync('category_info.txt', cat_info);
     })
   });
@@ -136,7 +135,6 @@ function getSpecialFeedsItems(){
     // execute Promises serially
     promiseSerial(category_feed_array)
       .then(function(output){
-        //debugger;
         output.forEach(function(results){
           if (results.items.length > 0) {
             results.items.forEach(function(item){
@@ -155,5 +153,6 @@ function getSpecialFeedsItems(){
   });
 }
 
-
 getSpecialFeedsItems();
+
+
