@@ -3,7 +3,7 @@ var Promise = require('bluebird');
 
 function _responseToText(response) {
   if (response.status >= 400) {
-    throw new Error("Bad server response");
+    throw new Error("Bad server response: "+response.status+" - "+response.statusText);
   }
   return response.text();
 }
@@ -25,6 +25,32 @@ function _feed(options, feed, key, category) {
     url += "&categoryId=" + category;
   }
   return _get(options, url);
+}
+
+function _paginate(options, category, brand, key, specialOffer, callback) {
+  var url = "//api.walmartlabs.com/v1/paginated/items?apiKey=" + key;
+  if (category) {
+    url += "&category=" + category;
+  }
+  if (brand) {
+    url += "&brand=" + brand;
+  }
+  if (specialOffer) {
+    url += "&specialOffer=" + specialOffer;
+  }
+  if (options && options.nextPage) {
+    url =  "//api.walmartlabs.com" + options.nextPage;
+  }
+  return _get(options, url).then(function(response) {
+      callback(response);
+      return response;
+  });
+}
+
+function _callback(arg) {
+  var args = [].slice.call(arg),
+      callback = typeof args[args.length - 1] === 'function' && args.pop() || function() {};
+  return callback;
 }
 
 module.exports = function(key, options) {
@@ -103,13 +129,34 @@ module.exports = function(key, options) {
         }
         return _get({}, url);
       }
+    },
+    paginateByCategory: function(categoryId, specialOffer) {
+      return _paginate(options, categoryId, null, key, specialOffer, _callback(arguments));
+    },
+    paginateByBrand: function(brand, extras, callback) {
+      return _paginate(options, null, brand, key, specialOffer, _callback(arguments));
+    },
+    getNewPage: function(nextPage) {
+      return _get(options, '//api.walmartlabs.com/'+nextPage);
     }, 
     getSpecifiedFeed: function(feed_and_cat_id) {
       //this is easier to loop through for different feeds
       //feed options include clearance, rollback, specialbuy, preorder, bestsellers
       feed = feed_and_cat_id.split(',')[0]
       categoryId = parseInt(feed_and_cat_id.split(',')[1])
-      return _feed(options, feed, key, categoryId);
+      var results_array = [];
+      return new Promise(function (resolve, reject) {
+        _feed(options, feed, key, categoryId).then(function(response){
+          if (response.hasOwnProperty('items')) {
+            response.items.forEach(function(item){
+              results_array.push(item);
+            })
+            resolve(results_array);
+          }
+        }).catch(function(err) {
+          reject(err);
+        });        
+      })
     }
   }
 };
