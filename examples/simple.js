@@ -172,7 +172,6 @@ function getSpecialFeedsItems(){
   });
 }
 
-
 function getSingleListOfPaginatedItems(feed_and_cat_id){
   
   //Writes all the feed deals in string representing a feed and category id to a file. 
@@ -190,7 +189,6 @@ function getSingleListOfPaginatedItems(feed_and_cat_id){
     }
   );
 }
-
 
 function getPaginatedSpecialFeeds(){
   /*
