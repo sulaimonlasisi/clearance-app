@@ -42,8 +42,9 @@ function _paginate(options, category, brand, key, specialOffer, callback) {
     url =  "//api.walmartlabs.com" + options.nextPage;
   }
   return _get(options, url).then(function(response) {
-      callback(response);
-      return response;
+
+    callback(response);
+    return response;
   });
 }
 
@@ -130,14 +131,21 @@ module.exports = function(key, options) {
         return _get({}, url);
       }
     },
-    paginateByCategory: function(categoryId, specialOffer) {
-      return _paginate(options, categoryId, null, key, specialOffer, _callback(arguments));
+    paginateByCategory: function(categoryId, specialOffer, idx) {
+      let delay_coeff = 1001;
+      return Promise.delay(idx*delay_coeff).then(function() {
+        return _paginate(options, categoryId, null, key, specialOffer, _callback(arguments));
+      })      
     },
     paginateByBrand: function(brand, extras, callback) {
       return _paginate(options, null, brand, key, specialOffer, _callback(arguments));
     },
-    getNewPage: function(nextPage) {
-      return _get(options, '//api.walmartlabs.com/'+nextPage);
+    getNewPage: function(nextPage, delay) {
+      let delay_coeff = 1001;
+      //added 2 to delay because there will be a lot of these called
+      return Promise.delay((delay+2)*delay_coeff).then(function() {
+        return _get(options, '//api.walmartlabs.com/'+nextPage);
+      })
     }, 
     getSpecifiedFeed: function(feed_and_cat_id, idx) {
       /*
@@ -146,8 +154,8 @@ module.exports = function(key, options) {
       
         API requires no more than five calls per second. Using delay here to make one call per second
       */
-      var delay_coeff = idx*1001 
-      return Promise.delay(delay_coeff).then(function() {
+      let delay_coeff = 1001; 
+      return Promise.delay(idx*delay_coeff).then(function() {
         return _feed(options, feed_and_cat_id.split(',')[0], key, parseInt(feed_and_cat_id.split(',')[1]));
       })
     }
