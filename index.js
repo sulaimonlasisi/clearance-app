@@ -3,7 +3,7 @@ var Promise = require('bluebird');
 
 function _responseToText(response) {
   if (response.status >= 400) {
-    throw new Error("Bad server response: "+response.status+" - "+response.statusText);
+    throw new Error("Bad server response");
   }
   return response.text();
 }
@@ -139,23 +139,16 @@ module.exports = function(key, options) {
     getNewPage: function(nextPage) {
       return _get(options, '//api.walmartlabs.com/'+nextPage);
     }, 
-    getSpecifiedFeed: function(feed_and_cat_id) {
-      //this is easier to loop through for different feeds
-      //feed options include clearance, rollback, specialbuy, preorder, bestsellers
-      feed = feed_and_cat_id.split(',')[0]
-      categoryId = parseInt(feed_and_cat_id.split(',')[1])
-      var results_array = [];
-      return new Promise(function (resolve, reject) {
-        _feed(options, feed, key, categoryId).then(function(response){
-          if (response.hasOwnProperty('items')) {
-            response.items.forEach(function(item){
-              results_array.push(item);
-            })
-            resolve(results_array);
-          }
-        }).catch(function(err) {
-          reject(err);
-        });        
+    getSpecifiedFeed: function(feed_and_cat_id, idx) {
+      /*
+        Easier to loop through for different feeds - options include clearance, 
+        rollback, specialbuy, preorder, bestsellers
+      
+        API requires no more than five calls per second. Using delay here to make one call per second
+      */
+      var delay_coeff = idx*1001 
+      return Promise.delay(delay_coeff).then(function() {
+        return _feed(options, feed_and_cat_id.split(',')[0], key, parseInt(feed_and_cat_id.split(',')[1]));
       })
     }
   }

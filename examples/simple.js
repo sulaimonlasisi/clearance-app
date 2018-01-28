@@ -3,7 +3,7 @@ if (process.env.NODE_ENV !== 'production') {
   require('dotenv').load();
 }
 
-var walmart = require('../index_for_pagination.js')(process.env.WALMART_API_KEY, {protocol: 'http'});
+var walmart = require('../index.js')(process.env.WALMART_API_KEY, {protocol: 'http'});
 
 function writeSubCategoryIdsToFile(){
   /*
@@ -88,7 +88,7 @@ function getRecursiveResponse(response){
     if (response.nextPage) {
       var new_page_response = walmart.getNewPage(response.nextPage);
       new_page_response.then(function(resp){
-        results_array = results_array.concat(results_array, getRecursiveResponse(resp));
+        results_array = results_array.concat(getRecursiveResponse(resp));
       })      
     }
     results_array.forEach(function(item){
@@ -106,69 +106,83 @@ function getRecursiveResponse(response){
 function that serially calls Promise functions and waits for each of them to be resolved
 Reference: https://hackernoon.com/functional-javascript-resolving-promises-sequentially-7aac18c4431e
 */
-const promiseSerial = cat_array =>
-cat_array.reduce((promise, func) =>
-promise.then(result => func().then(Array.prototype.concat.bind(result))),
-Promise.resolve([]))
+const paginatedPromiseSerial = cat_array =>
+  cat_array.reduce((promise, func) =>
+  promise.then(result => func().then(Array.prototype.concat.bind(result))), Promise.resolve([]))
+
+
+
+
+
 
 
 function getSpecialFeedsItems(){
   /*
-    Gets clearance items available in all categories.
+    Gets special feeds deals on items available in all categories.
   */
   
-  /*
-    after testing for a while, found that feed info for some category_ids return server errors
-    So, omitting them from the category_array we are getting feeds info for.
-    Run writeCategoryIdsToFile() if interested in the names of the categories
-  */
-
-  var invalid_clearance_cat_id_array = ["3920", "976759", "1094765", "6197502", "6197502", "4096", "4104", 
-                                "7796869", "1005862", "5426", "6163033", "5440", "2636"];
-  var invalid_preorder_cat_id_array = ["1094765", "6197502", "1005862"];
-  var invalid_specialbuy_cat_id_array = ["4104"];  
   var special_feeds_array = ["clearance", "specialbuy", "bestsellers", "preorder"];
+  
   walmart.taxonomy().then(function(result) { 
-    var valid_cat_id_array = []
+    //counters for the categories that we got deals for
+    var promises_fulfilled = 0
+    var upc_items_count = 0;
+    var prom_with_items = 0;
+    var total_items_count = 0;
+    
+    var category_id_array = []; //holds all feeds/category info
+    var category_feed_promises_array = []; //holds promises for each feed/category request
+
+    //prepare all feed/id combination to be requested
     result.categories.forEach(function(category){
       special_feeds_array.forEach(function(feed){
-        //return only valid categories for feeds. Valid categories found through testing
-        if (feed == "clearance") {
-          if (!(invalid_clearance_cat_id_array.includes(category.id))) {
-            valid_cat_id_array.push(feed+","+category.id);
-          }
-        }
-        else if (feed == "preorder") {
-          if (!(invalid_preorder_cat_id_array.includes(category.id))) {
-            valid_cat_id_array.push(feed+","+category.id);
-          }
-        }
-        else if (feed == "specialbuy") {
-          if (!(invalid_specialbuy_cat_id_array.includes(category.id))) {
-            valid_cat_id_array.push(feed+","+category.id);
-          }
-        }
-        else {
-          valid_cat_id_array.push(feed+","+category.id);
-        }
+        category_id_array.push(feed+","+category.id);
       })               
     })
-  
-    // map clearance call over valid_cat_id_array
-    var category_feed_array = valid_cat_id_array.map(feed_and_cat_id => () => walmart.getSpecifiedFeed(feed_and_cat_id));
+
+    //implement all requests and save them in promises array
+    category_id_array.forEach(function(feed_and_cat_id, index){
+      category_feed_promises_array.push(walmart.getSpecifiedFeed(feed_and_cat_id, index));
+    });
     
-    // execute Promises serially
-    promiseSerial(category_feed_array)
-      .then(function(results){
-        results.forEach(function(item){
-          //uses upc for identification
-          if (item.hasOwnProperty('upc')){
-            //writing file blocks occasionally, so setting time out to 30 milliseconds for each write
-            setTimeout(function(){ fs.appendFileSync('special_feeds_items.txt', extractProductInfo(item)) }, 30);;
-          }        
-        })
+    /*
+      get all promises and only check the ones that were fulfilled    
+      because some cat_ids usually fail, we don't want to consider them
+    */
+    Promise.all(category_feed_promises_array.map(function(promise) {
+      return promise.reflect();
+    })).then(function(inspections) {
+      var results_array = [];  //saves results of all fulfilled deals    
+      inspections.forEach(function(inspection) {       
+        if (inspection.isFulfilled()) {
+          promises_fulfilled = promises_fulfilled +1;
+          if (inspection.value().hasOwnProperty('items')) {
+            prom_with_items = prom_with_items+1; //feeds that had a deal
+            total_items_count = total_items_count+ inspection.value().items.length //total items returned
+            inspection.value().items.forEach(function(item){
+              if (item.hasOwnProperty('upc')) {
+                upc_items_count = upc_items_count+1 //tracking upc_count -- should equal num items in file
+                results_array.push(item)
+              }
+            })
+          }                    
+        }
       })
-      .catch(console.error.bind(console))
+      return results_array;
+    }).then(function(results){
+        //write to file
+        var special_feeds_file = fs.createWriteStream('special_feeds_items.txt');
+        special_feeds_file.on('error', function(err) { console.log(err)/* error handling */ });
+        results.forEach(function(upc_item) { special_feeds_file.write(extractProductInfo(upc_item)); });
+        special_feeds_file.end();
+        
+        //book keeping
+        console.log("Total Feeds Requested: "+category_feed_promises_array.length)
+        console.log("Feeds successfully returned from API: "+promises_fulfilled)
+        console.log("UPC Items Count: "+upc_items_count)
+        console.log("Feeds with Items: "+prom_with_items)
+        console.log("Total Items: "+total_items_count)
+    }).catch(console.error.bind(console))      
   });
 }
 
@@ -211,14 +225,14 @@ function getPaginatedSpecialFeeds(){
 
     // map clearance call over valid_cat_id_array
     var category_special_feeds_array = valid_cat_id_array.map(feed_and_cat_id => () => getSingleListOfPaginatedItems(feed_and_cat_id));
-    
+    debugger;
     // execute Promises serially
-    promiseSerial(category_special_feeds_array)
+    paginatedPromiseSerial(category_special_feeds_array)
   })
 }
 
 
 
 
-getSpecialFeedsItems();
-//getPaginatedSpecialFeeds();
+//getSpecialFeedsItems();
+getPaginatedSpecialFeeds();
