@@ -47,6 +47,7 @@
     "bluebird": "^2.9.34",
     "dotenv": "^4.0.0",
     "isomorphic-fetch": "^2.1.1",
+    "mws-product": "^1.0.2",
     "walmart": "0.0.4"
   },
   "description": "Walmart API wrapper",
@@ -78,7 +79,7 @@
   "optionalDependencies": {},
   "readme": "ERROR: No README data found!",
   "scripts": {
-    "start": "node server.js",
+    "start": "node examples/simple.js",
     "test": "mocha"
   },
   "version": "0.0.4"
