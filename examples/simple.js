@@ -3,8 +3,9 @@ const AmazonClient = require('../src/amazon/AmazonClient');
 
 function testAmazonProducts() {
   let client = new AmazonClient();
+  // The second UPC in this list is associated with multiple items and will be omitted from results for now.
   let testUPCs = ["071662068493", "020335030640", "012502642176"];
-  
+
   client.getProductsById(testUPCs).then(function(productList) {
     console.log('data' + productList);
     productList.writeToFile('amazon_items.txt');
