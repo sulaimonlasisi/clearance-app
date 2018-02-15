@@ -92,6 +92,23 @@ class WalmartClient {
     return this._get(`http://api.walmartlabs.com/v1/search?apiKey=${this.apiKey}&query=${query}`, delayIndex*this.delayTime);
   }
 
+  // Returns an array of Promises for retrieving information for all special feeds and all categories.
+  getAllSpecialFeedItems() {
+    let specialFeedItems = [];
+
+    // Obtain list of promises for all item requests for every category.
+    specialFeedItems.push(this.clearance());
+    specialFeedItems.push(this.specialBuys());
+    specialFeedItems.push(this.bestSellers());
+    specialFeedItems.push(this.rollbacks());
+    specialFeedItems.push(this.preOrders());
+
+    // Return promises
+    return Promise.all(specialFeedItems.map(function(promise) {
+      return promise.reflect();
+    }));
+  }
+
   /*
   Retrieve a paginated list of products.
   options - Optional object for filtering search results.

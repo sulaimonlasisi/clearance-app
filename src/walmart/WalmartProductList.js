@@ -4,6 +4,10 @@ const fs = require('fs');
 /* Class representing a list of walmart items */
 class WalmartProductList {
 
+  /* productsJSON - json list of walmart products
+    Instance attributes:
+      products - list of product objects with UPCs.
+  */
   constructor(productsJSON) {
     this.products = this.productsList(productsJSON);
   }

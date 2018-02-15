@@ -4,6 +4,10 @@ const fs = require('fs');
 /* Class representing a list of amazon items */
 class AmazonProductList {
 
+  /* productsJSON - json list of amazon products
+    Instance attributes:
+      products - list of product objects that correlate with a single UPC each.
+  */
   constructor(productsJSON) {
     this.products = this.productsList(productsJSON);
   }

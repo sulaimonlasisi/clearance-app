@@ -68,49 +68,31 @@ function getPaginatedSpecialFeeds(){
 }
 
 function getSpecialFeedsItems() {
-  console.time('Special Feeds Performance');
-  let specialFeedItems = [];
-  let promisesFulfilled = 0
-  let promisesWithItems = 0;
-  let totalItemsCount;
+  console.time('Special Feeds Performance'); // Performance test
 
-  // Obtain list of promises for all item requests for every category.
-  specialFeedItems.push(walmart.client.clearance());
-  specialFeedItems.push(walmart.client.specialBuys());
-  specialFeedItems.push(walmart.client.bestSellers());
-  specialFeedItems.push(walmart.client.rollbacks());
-  specialFeedItems.push(walmart.client.preOrders());
-
-  /*
-    Get all promises and only check the ones that were fulfilled    
-    because some requests usually fail, we don't want to consider them.
-  */
-  Promise.all(specialFeedItems.map(function(promise) {
-    return promise.reflect();
-  })).then(function(inspections) {
+  walmart.client.getAllSpecialFeedItems()
+  .then(function(inspections) {
+    /*
+      Get all promises and only check the ones that were fulfilled    
+      because some requests usually fail, we don't want to consider them.
+    */
     let items = [];  // Saves results of all fulfilled deals
     inspections.forEach(function(inspection) {       
       if (inspection.isFulfilled()) {
-        promisesFulfilled += 1;
         if (inspection.value().hasOwnProperty('items')) {
           items.push(...inspection.value().items);
-          promisesWithItems += 1; // Feeds that had a deal
         }                    
       }
-    })
-    totalItemsCount = items.length;
+    });
+
     return new walmart.ProductList(items);
   }).then(function(productList){
-      //write to file
-      productList.writeToFile('special_feeds_items.txt');
-      
-      // Book keeping
-      console.log("Total Feeds Requested: " + specialFeedItems.length);
-      console.log("Feeds successfully returned from API: " + promisesFulfilled);
-      console.log("Feeds with Items: " + promisesWithItems);
-      console.log("UPC Items Count: " + productList.length());
-      console.log("Total Items: " + totalItemsCount);
-      console.timeEnd('Special Feeds Performance');
+    //write to file
+    productList.writeToFile('special_feeds_items.txt');
+
+    // Book keeping
+    console.log("UPC Items Count: " + productList.length());
+    console.timeEnd('Special Feeds Performance');
   }).catch(console.error.bind(console));
 }
 
