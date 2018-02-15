@@ -16,14 +16,14 @@ class AmazonProductList {
   productsList(productsJSON) {
     let products = [];
 
-    if (productsJSON.GetMatchingProductForIdResponse.GetMatchingProductForIdResult) {
+    if (productsJSON.GetMatchingProductForIdResponse && productsJSON.GetMatchingProductForIdResponse.GetMatchingProductForIdResult) {
       productsJSON.GetMatchingProductForIdResponse.GetMatchingProductForIdResult.forEach(function(product) {
         /*
         It is possible for multiple items to share the same UPC.
         As a result, 'product' could be a single product Object or an Array of many product Objects.
         For now, we will omit scenarios where there are multiple products with the same UPC.
         */
-        if (!Array.isArray(product.Products.Product)) {
+        if (product.Products && !Array.isArray(product.Products.Product)) {
           products.push(new AmazonProduct(product.Products.Product)); // Amazon's json structure is a bit weird...
         }
       });

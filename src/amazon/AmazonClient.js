@@ -33,6 +33,9 @@ class AmazonClient {
       });
     }).then(function(jsonResponse) {
       return new ProductList(jsonResponse);
+    }).catch(function(error){
+      console.log(error);
+      return new ProductList([]);
     })
   }
 }
