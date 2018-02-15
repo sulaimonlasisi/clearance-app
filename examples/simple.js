@@ -5,7 +5,7 @@ function testAmazonProducts() {
   let client = new AmazonClient();
   // The second UPC in this list is associated with multiple items and will be omitted from results for now.
   let testUPCs = ["071662068493", "020335030640", "012502642176"];
-
+  
   client.getProductsById(testUPCs).then(function(productList) {
     console.log('data' + productList);
     productList.writeToFile('amazon_items.txt');
@@ -46,7 +46,7 @@ function getPaginatedSpecialFeeds(){
   // Retrieve deal information for each category
   specialFeeds.forEach(function(feed) {
     walmart.client.categoryIds.forEach(function(categoryId) {
-      categorySpecialFeeds.push(walmart.client.paginate({
+      categorySpecialFeeds.push(walmart.client.getPaginatedItems({
         categoryId: categoryId,
         specialOffer: feed,
         delayIndex: paginateDelayIndex
@@ -70,30 +70,15 @@ function getPaginatedSpecialFeeds(){
 function getSpecialFeedsItems() {
   console.time('Special Feeds Performance'); // Performance test
 
-  walmart.client.getAllSpecialFeedItems()
-  .then(function(inspections) {
-    /*
-      Get all promises and only check the ones that were fulfilled    
-      because some requests usually fail, we don't want to consider them.
-    */
-    let items = [];  // Saves results of all fulfilled deals
-    inspections.forEach(function(inspection) {       
-      if (inspection.isFulfilled()) {
-        if (inspection.value().hasOwnProperty('items')) {
-          items.push(...inspection.value().items);
-        }                    
-      }
-    });
-
-    return new walmart.ProductList(items);
-  }).then(function(productList){
+  walmart.client.getSpecialFeedItems()
+  .then(function(walmartProducts) {
     //write to file
-    productList.writeToFile('special_feeds_items.txt');
+    walmartProducts.writeToFile('special_feeds_items.txt');
 
     // Book keeping
-    console.log("UPC Items Count: " + productList.length());
+    console.log("UPC Items Count: " + walmartProducts.length());
     console.timeEnd('Special Feeds Performance');
-  }).catch(console.error.bind(console));
+  });
 }
 
 testAmazonProducts();

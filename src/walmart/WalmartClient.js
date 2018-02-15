@@ -1,6 +1,7 @@
 const fetch = require('isomorphic-fetch');
 const Promise = require('bluebird');
 const fs = require('fs');
+const ProductList = require('./WalmartProductList');
 
 /** Class for handling operations with Walmart's inventory */
 class WalmartClient {
@@ -92,21 +93,28 @@ class WalmartClient {
     return this._get(`http://api.walmartlabs.com/v1/search?apiKey=${this.apiKey}&query=${query}`, delayIndex*this.delayTime);
   }
 
-  // Returns an array of Promises for retrieving information for all special feeds and all categories.
-  getAllSpecialFeedItems() {
-    let specialFeedItems = [];
+  getSpecialFeedItems() {
+    return this._getAllSpecialFeedItems()
+    .then(function(inspections) {
+      /*
+        Get all promises and only check the ones that were fulfilled    
+        because some requests usually fail, we don't want to consider them.
+      */
+      let items = [];  // Saves results of all fulfilled deals
+      inspections.forEach(function(inspection) {       
+        if (inspection.isFulfilled()) {
+          if (inspection.value().hasOwnProperty('items')) {
+            items.push(...inspection.value().items);
+          }                    
+        }
+      });
 
-    // Obtain list of promises for all item requests for every category.
-    specialFeedItems.push(this.clearance());
-    specialFeedItems.push(this.specialBuys());
-    specialFeedItems.push(this.bestSellers());
-    specialFeedItems.push(this.rollbacks());
-    specialFeedItems.push(this.preOrders());
-
-    // Return promises
-    return Promise.all(specialFeedItems.map(function(promise) {
-      return promise.reflect();
-    }));
+      return new ProductList(items);
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty products list.
+      return new ProductList([]);
+    });
   }
 
   /*
@@ -117,7 +125,7 @@ class WalmartClient {
             options.brand        - The brand to search by.
             options.delayIndex   - Index multiplier for determining the amount of time to delay a request execution.
   */
-  paginate(options={delayIndex: 0}) {
+  getPaginatedItems(options={delayIndex: 0}) {
     let url = `http://api.walmartlabs.com/v1/paginated/items?apiKey=${this.apiKey}`;
     if (options.categoryId) {
       url += `&category=${options.categoryId}`;
@@ -206,6 +214,23 @@ writeCategoryIdsToFile(){
         });
       });
     });
+  }
+
+  // Returns an array of Promises for retrieving information for all special feeds and all categories.
+  _getAllSpecialFeedItems() {
+    let specialFeedItems = [];
+
+    // Obtain list of promises for all item requests for every category.
+    specialFeedItems.push(this.clearance());
+    specialFeedItems.push(this.specialBuys());
+    specialFeedItems.push(this.bestSellers());
+    specialFeedItems.push(this.rollbacks());
+    specialFeedItems.push(this.preOrders());
+
+    // Return promises
+    return Promise.all(specialFeedItems.map(function(promise) {
+      return promise.reflect();
+    }));
   }
 
 }
