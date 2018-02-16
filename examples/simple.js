@@ -90,6 +90,6 @@ function getSpecialFeedsItems() {
   });
 }
 
-//testAmazonProducts();
+testAmazonProducts();
 //getSpecialFeedsItems();
-getPaginatedSpecialFeeds();
+//getPaginatedSpecialFeeds();

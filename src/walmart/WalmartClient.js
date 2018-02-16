@@ -10,20 +10,11 @@ class WalmartClient {
   /*
   Instance Attributes
   apiKey - The Walmart developer api key. Required for authenticating requests.
-  categoryIds - Ids Walmart uses to represent store product categories.
   delayTime - Amount of time (ms) to delay in between requests. This can be useful when making
               hundreds of requests since there is a limit to how many can run asynchronously at once.
   */
   constructor() {
     this.apiKey = process.env.WALMART_API_KEY;
-    // Walmart category IDs will likely not change often so hard coding these in to avoid an extra api request.
-    // Can always call this.getCategoryIds() or this.writeCategoryIdsToFile() to update the list if we think they change.
-    this.categoryIds = [
-      "1334134", "91083", "5427", "1085666", "3920", "1105910", 
-      "5438", "3944", "976759", "1094765", "976760", "4044", "1072864", "1115193", 
-      "6197502", "3891", "4096", "4104", "7796869", "1229749", "2637", "5428", "1005862", 
-      "5440", "5426", "1085632", "4125", "4171", "2636", "6735581"
-    ];
     this.delayTime = 500; // 500ms delay. Can increase this if needed.
   }
 
@@ -31,7 +22,7 @@ class WalmartClient {
   getCategoryIds() {
     let categoryIDs = [];
     const that = this;
-    
+
     return new Promise(function(resolve, reject) {
       that.taxonomy().then(function(result) {
         result.categories.forEach(function(category) {
