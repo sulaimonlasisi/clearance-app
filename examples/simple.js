@@ -51,27 +51,29 @@ function getPaginatedSpecialFeeds(){
   let paginateDelayIndex = 0;
 
   // Retrieve deal information for each category
-  specialFeeds.forEach(function(feed) {
-    walmart.client.categoryIds.forEach(function(categoryId) {
-      categorySpecialFeeds.push(walmart.client.getPaginatedItems({
-        categoryId: categoryId,
-        specialOffer: feed,
-        delayIndex: paginateDelayIndex
-      }));
-      paginateDelayIndex += 1;
+  walmart.client.getCategoryIds().then(function(categoryIds) {
+    specialFeeds.forEach(function(feed) {
+      categoryIds.forEach(function(categoryId) {
+        categorySpecialFeeds.push(walmart.client.getPaginatedItems({
+          categoryId: categoryId,
+          specialOffer: feed,
+          delayIndex: paginateDelayIndex
+        }));
+        paginateDelayIndex += 1;
+      });
     });
-  });
 
-  // Get pages from fulfilled promises
-  Promise.all(categorySpecialFeeds.map(function(promise) {
-    return promise.reflect();
-  })).then(function(inspections) {
-    inspections.forEach(function(inspection, index) {       
-      if (inspection.isFulfilled()) {
-        getRecursiveResponse(inspection.value(), index)                  
-      }
-    })
-  }).catch(console.error.bind(console))
+    // Get pages from fulfilled promises
+    Promise.all(categorySpecialFeeds.map(function(promise) {
+      return promise.reflect();
+    })).then(function(inspections) {
+      inspections.forEach(function(inspection, index) {       
+        if (inspection.isFulfilled()) {
+          getRecursiveResponse(inspection.value(), index)                  
+        }
+      })
+    }).catch(console.error.bind(console))
+  });
 }
 
 function getSpecialFeedsItems() {
@@ -89,5 +91,5 @@ function getSpecialFeedsItems() {
 }
 
 //testAmazonProducts();
-getSpecialFeedsItems();
-// getPaginatedSpecialFeeds();
+//getSpecialFeedsItems();
+getPaginatedSpecialFeeds();

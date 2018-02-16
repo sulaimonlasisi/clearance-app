@@ -30,12 +30,20 @@ class WalmartClient {
   // Retrieve a list of all the Walmart category IDs
   getCategoryIds() {
     let categoryIDs = [];
-    this.taxonomy().then(function(result) {
-      result.categories.forEach(function(category) {
-        categoryIDs.push(category.id);
+    const that = this;
+    
+    return new Promise(function(resolve, reject) {
+      that.taxonomy().then(function(result) {
+        result.categories.forEach(function(category) {
+          categoryIDs.push(category.id);
+        });
+        resolve(categoryIDs);
       });
+    }).then(function(categoryIDs) {
+      return categoryIDs;
+    }).catch(function(err) {
+      reject(err);
     });
-    return categoryIDs;
   }
 
   getItem(itemID, terra) {
