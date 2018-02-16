@@ -88,6 +88,6 @@ function getSpecialFeedsItems() {
   });
 }
 
-testAmazonProducts();
-//getSpecialFeedsItems();
+//testAmazonProducts();
+getSpecialFeedsItems();
 // getPaginatedSpecialFeeds();

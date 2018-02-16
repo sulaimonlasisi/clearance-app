@@ -162,18 +162,18 @@ class WalmartClient {
         category.children.forEach(function(child){
           if (child.hasOwnProperty('children')){
             child.children.forEach(function(grand_child){
-              let cat_info = grand_child.path + ',' + grand_child.id+'\n';
+              let cat_info = grand_child.path + "," + grand_child.id + "\r\n";
               fs.appendFileSync('subcategory_info.txt', cat_info);
             })
           }
           else {
-            let cat_info = child.path + ',' + child.id+'\n';
+            let cat_info = child.path + "," + child.id + "\r\n";
             fs.appendFileSync('subcategory_info.txt', cat_info);
           }
         })
       }
       else {
-        let cat_info = category.name + ' ' + category.id+'\n';
+        let cat_info = category.name + " " + category.id + "\r\n";
         fs.appendFileSync('subcategory_info.txt', cat_info);
       }
     })
@@ -186,7 +186,7 @@ writeCategoryIdsToFile(){
   */
   this.taxonomy().then(function(data){
     data.categories.forEach(function(category){
-      let cat_info = category.name + ',' + category.id+'\n';
+      let cat_info = category.name + "," + category.id + "\r\n";
 
       fs.appendFileSync('category_info.txt', cat_info);
     })

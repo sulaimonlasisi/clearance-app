@@ -15,7 +15,7 @@ class WalmartProduct {
 
   // Returns a string of the basic product information.
   print() {
-    return `${this.name}, ${this.upc}, ${this.price}; `;
+    return `${this.name}, ${this.upc}, ${this.price}` + "\r\n";
   }
 
 }

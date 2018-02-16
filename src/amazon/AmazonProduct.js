@@ -12,7 +12,7 @@ class AmazonProduct {
 
   // Returns a string of the basic product information.
   print() {
-    return `${this.name}; `;
+    return `${this.name}` + "\r\n";
   }
 
 }
