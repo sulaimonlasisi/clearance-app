@@ -109,8 +109,22 @@ Returns an array of items of the trending items on the specified category.
   ```
   npm install
   ```
-3. Create a `.env` file in the project root directory and add `WALMART_API_KEY=YOUR_API_KEY` to the file. This sets your api key as an environment variable.
+3. Create a `.env` file in the project root directory and add the following variables to the file:
+* `AMAZON_ACCESS_KEY=<YOUR_AMAZON_ACCESS_KEY>`
+* `AMAZON_SECRET_KEY=<YOUR_AMAZON_SECRET_KEY>`
+* `AMAZON_SELLER_ID=<YOUR_AMAZON_SELLER_ID>`
+* `WALMART_API_KEY=YOUR_WALMART_API_KEY`
+This sets your environment variables for authenticating api requests.
 4. Test the project is working by running the example queries in your terminal:
+  ```
+  npm start
+  ```
+  Can also run example file directly with:
   ```
   node examples/simple.js
   ```
+
+### Dependency Documentation
+* [Walmart Open API](https://developer.walmartlabs.com/docs/read/Special_Feeds)
+* [Amazon MWS Products API](http://docs.developer.amazonservices.com/en_US/products/Products_Overview.html)
+* [Amazon MWS Node JS client](https://github.com/devfacet/mws-product)
