@@ -220,11 +220,11 @@ writeCategoryIdsToFile(){
     let specialFeedItems = [];
 
     // Obtain list of promises for all item requests for every category.
-    // specialFeedItems.push(this.clearance());
+    specialFeedItems.push(this.clearance());
     specialFeedItems.push(this.specialBuys());
-    // specialFeedItems.push(this.bestSellers());
-    // specialFeedItems.push(this.rollbacks());
-    // specialFeedItems.push(this.preOrders());
+    specialFeedItems.push(this.bestSellers());
+    specialFeedItems.push(this.rollbacks());
+    specialFeedItems.push(this.preOrders());
 
     // Return promises
     return Promise.all(specialFeedItems.map(function(promise) {
