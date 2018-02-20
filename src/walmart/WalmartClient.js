@@ -8,10 +8,10 @@ class WalmartClient {
   // Public methods
 
   /*
-  Instance Attributes
-  apiKey - The Walmart developer api key. Required for authenticating requests.
-  delayTime - Amount of time (ms) to delay in between requests. This can be useful when making
-              hundreds of requests since there is a limit to how many can run asynchronously at once.
+  Instance Attributes:
+    apiKey    - The Walmart developer api key. Required for authenticating requests.
+    delayTime - Amount of time (ms) to delay in between requests. This can be useful when making
+                hundreds of requests since there is a limit to how many can run asynchronously at once.
   */
   constructor() {
     this.apiKey = process.env.WALMART_API_KEY;
@@ -220,11 +220,11 @@ writeCategoryIdsToFile(){
     let specialFeedItems = [];
 
     // Obtain list of promises for all item requests for every category.
-    specialFeedItems.push(this.clearance());
+    // specialFeedItems.push(this.clearance());
     specialFeedItems.push(this.specialBuys());
-    specialFeedItems.push(this.bestSellers());
-    specialFeedItems.push(this.rollbacks());
-    specialFeedItems.push(this.preOrders());
+    // specialFeedItems.push(this.bestSellers());
+    // specialFeedItems.push(this.rollbacks());
+    // specialFeedItems.push(this.preOrders());
 
     // Return promises
     return Promise.all(specialFeedItems.map(function(promise) {

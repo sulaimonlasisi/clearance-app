@@ -8,11 +8,7 @@ function testAmazonProducts() {
   .then(function(walmartProducts) {
     // For each walmart product, retrieve the correlating amazon product.
     // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
-    let items = walmartProducts.products.map(item => item.upc);
-    // Amazon allows a maximum of 5 items to be looked up at at time.
-    // Refer to idList param at http://docs.developer.amazonservices.com/en_US/products/Products_GetMatchingProductForId.html
-    // TODO: Loop through slices of items array and make multiple requests. Will only look at first 5 for now.
-    amazonClient.getProductsById(items.slice(0, 5))
+    amazonClient.getProductsById(walmartProducts.products.map(item => item.upc))
     .then(function(amazonProducts) {
       amazonProducts.writeToFile('amazon_items.txt');
     });
