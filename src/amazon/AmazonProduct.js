@@ -5,6 +5,7 @@ class AmazonProduct {
   product - A single Amazon product.
   */
   constructor(product) {
+    this.price = this._getListPrice(product.AttributeSets['ns2:ItemAttributes']['ns2:ListPrice']);
     this.brand = product.AttributeSets['ns2:ItemAttributes']['ns2:Brand'];
     this.name = product.AttributeSets['ns2:ItemAttributes']['ns2:Title'];
     this.dimensions = this._getProductDimensions(product.AttributeSets['ns2:ItemAttributes']['ns2:PackageDimensions'])
@@ -14,7 +15,8 @@ class AmazonProduct {
 
   // Returns a string of the basic product information.
   print() {
-    return `${this.ASIN}, ${this.name}, ${this.bestSalesRanking.rank}` + "\r\n";
+    return `ASIN: ${this.ASIN}, NAME: ${this.name}, PRICE: ${this.price}, ` +
+    `RANK: ${this.bestSalesRanking.rank}, RANK CATEGORY: ${this.bestSalesRanking.categoryId}` + "\r\n";
   }
 
   // Private methods
@@ -67,6 +69,10 @@ class AmazonProduct {
     return bestRank;
   }
 
+  /* Return the list price amount of the amazon product if known. */
+  _getListPrice(listPrice) {
+    return listPrice ? listPrice['ns2:Amount'] : 'UNKNOWN';
+  }
 }
 
 module.exports = AmazonProduct;
