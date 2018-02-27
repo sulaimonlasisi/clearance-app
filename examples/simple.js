@@ -8,9 +8,9 @@ function testAmazonProducts() {
   .then(function(walmartProducts) {
     // For each walmart product, retrieve the correlating amazon product.
     // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
-    amazonClient.getProductsById(walmartProducts.products.map(item => item.upc))
-    .then(function(amazonProducts) {
-      amazonProducts.writeToFile('amazon_items.txt');
+    amazonClient.getPairedProducts(walmartProducts.products)
+    .then(function(pairedProducts) {
+      pairedProducts.writeToFile('paired_items.txt');
     });
   });
 }
