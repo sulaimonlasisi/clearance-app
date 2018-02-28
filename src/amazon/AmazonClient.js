@@ -1,6 +1,7 @@
 const Promise = require('bluebird');
 const mwsProd = require('mws-product');
 const ProductList = require('./AmazonProductList');
+const PairedProductList = require('./../PairedProductList');
 
 /* Class for handling operations with Amazon's inventory */
 class AmazonClient {
@@ -19,6 +20,23 @@ class AmazonClient {
     this.sellerId  = process.env.AMAZON_SELLER_ID;
     this.app = mwsProd({auth: {sellerId: this.sellerId, accessKeyId: this.accessKey, secretKey: this.secretKey}, marketplace: 'US'});
     this.delayTime = 500; // 500ms delay. Can increase this if needed.
+  }
+
+  /*
+    Optional wrapper function around getProductsById. Use this function for returning an array
+    of amazon products along with their correlating walmart products.
+    Return: [{amazonProd: AmazonProduct, walmartProd: WalmartProduct}]
+  */
+  getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
+    let pairedProducts = new PairedProductList();
+
+    return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
+    .then(function(amazonProducts) {
+      amazonProducts.products.forEach(function(amazonProduct) {
+        pairedProducts.addPairedProduct(amazonProduct, walmartProducts.find(item => item.upc == amazonProduct.upc));
+      });
+      return pairedProducts;
+    });
   }
 
   /*

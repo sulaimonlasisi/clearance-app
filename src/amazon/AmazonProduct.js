@@ -4,13 +4,14 @@ class AmazonProduct {
   /*
   product - A single Amazon product.
   */
-  constructor(product) {
+  constructor(product, UPC) {
     this.price = this._getListPrice(product.AttributeSets['ns2:ItemAttributes']['ns2:ListPrice']);
     this.brand = product.AttributeSets['ns2:ItemAttributes']['ns2:Brand'];
     this.name = product.AttributeSets['ns2:ItemAttributes']['ns2:Title'];
     this.dimensions = this._getProductDimensions(product.AttributeSets['ns2:ItemAttributes']['ns2:PackageDimensions'])
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
+    this.upc = UPC ? UPC : 'UNKNOWN'
   }
 
   // Returns a string of the basic product information.

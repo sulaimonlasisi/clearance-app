@@ -33,7 +33,7 @@ class AmazonProductList {
         For now, we will omit scenarios where there are multiple products with the same UPC.
         */
         if (product.Products && !Array.isArray(product.Products.Product)) {
-          products.push(new AmazonProduct(product.Products.Product)); // Amazon's json structure is a bit weird...
+          products.push(new AmazonProduct(product.Products.Product, product['A$'].Id)); // Amazon's json structure is a bit weird...
         }
       });
     }
