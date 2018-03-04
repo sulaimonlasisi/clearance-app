@@ -17,10 +17,8 @@ class WalmartProductList {
     let products = [];
 
     productsJSON.forEach(function(product) {
-      if (product.hasOwnProperty('upc') && product.hasOwnProperty('availableOnline')) {
-        if (product.availableOnline) {
-          products.push(new WalmartProduct(product));
-        }
+      if (product.hasOwnProperty('upc') && product.availableOnline) {
+        products.push(new WalmartProduct(product));
       }
     });
     return products;
