@@ -4,13 +4,14 @@ class AmazonProduct {
   /*
   product - A single Amazon product.
   */
-  constructor(product) {
+  constructor(product, UPC) {
     this.price = this._getListPrice(product.AttributeSets['ns2:ItemAttributes']['ns2:ListPrice']);
     this.brand = product.AttributeSets['ns2:ItemAttributes']['ns2:Brand'];
     this.name = product.AttributeSets['ns2:ItemAttributes']['ns2:Title'];
     this.dimensions = this._getProductDimensions(product.AttributeSets['ns2:ItemAttributes']['ns2:PackageDimensions'])
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
+    this.upc = UPC ? UPC : 'UNKNOWN'
   }
 
   // Returns a string of the basic product information.
@@ -24,11 +25,13 @@ class AmazonProduct {
   // Returns an object containing the product's dimensions.
   _getProductDimensions(dimensions) {
     if (dimensions) {
+      //sometimes, dimensions can be available and some of its attributes would still be unavailable
+      //so, checking each attribute's availability independently
       return {
-        width: dimensions['ns2:Width'],
-        height: dimensions['ns2:Height'],
-        length: dimensions['ns2:Length'],
-        weight: dimensions['ns2:Weight']
+        width: dimensions['ns2:Width'] ? dimensions['ns2:Width'] : 'UNKNOWN',
+        height: dimensions['ns2:Height'] ? dimensions['ns2:Height'] : 'UNKNOWN',
+        length: dimensions['ns2:Length'] ? dimensions['ns2:Length'] : 'UNKNOWN',
+        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN'
       }
     } else {
       return {
