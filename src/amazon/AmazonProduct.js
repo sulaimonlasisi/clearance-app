@@ -1,3 +1,5 @@
+const salesRankings = require('./../sales_rankings');
+
 /* Class representing a store item */
 class AmazonProduct {
 
@@ -12,6 +14,8 @@ class AmazonProduct {
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN'
+    this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
+    this.MIN_SELL_PRICE = 10; // $10
   }
 
   // Returns a string of the basic product information.
@@ -20,7 +24,33 @@ class AmazonProduct {
     `RANK: ${this.bestSalesRanking.rank}, RANK CATEGORY: ${this.bestSalesRanking.categoryId}` + "\r\n";
   }
 
+  /* Profitable products are ones with a good sales ranking and a known sales price. */
+  isProfitable() {
+    return this._isPopular() && this._isWithinSellPrice();
+  }
+
   // Private methods
+
+  /* Determine if this amazon product will sell well based on the sales rank. */
+  _isPopular() {
+    if (this.bestSalesRanking.rank !== 'UNKNOWN') {
+      if (salesRankings[this.category]) {
+        return this.bestSalesRanking.rank <= salesRankings[this.category];
+      } else {
+        console.log(`Unknown sales category. Add ${this.category} to sales_rankings.js`);
+      }
+    }
+    return false;
+  }
+
+  /* 
+    Determine if this amazon product has a known sell price and if it's greater than the required
+    minimum. Anything less than the MIN_SELL_PRICE will likely not yield profit after shipping, tax, 
+    and initial purchase costs.
+  */
+  _isWithinSellPrice() {
+    return this.price !== 'UNKNOWN' && this.price >= this.MIN_SELL_PRICE;
+  }
 
   // Returns an object containing the product's dimensions.
   _getProductDimensions(dimensions) {
@@ -46,7 +76,10 @@ class AmazonProduct {
     Returns an object containing the highest sales rank of a product and it's category.
   */
   _getBestSalesRanking(salesRankings) {
-    let bestRank ={};
+    let bestRank ={
+      rank: 'UNKNOWN',
+      category: 'UNKNOWN'
+    };
 
     if (salesRankings) {
       if (Array.isArray(salesRankings.SalesRank)) {
