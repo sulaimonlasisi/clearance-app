@@ -1,15 +1,17 @@
 const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
-
+const AnalysisClient = require('../src/analysis/AnalysisClient');
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
-  
+  let analysisClient = new AnalysisClient();
   walmart.client.getSpecialFeedItems()
   .then(function(walmartProducts) {
     // For each walmart product, retrieve the correlating amazon product.
     // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
     amazonClient.getPairedProducts(walmartProducts.products)
     .then(function(pairedProducts) {
+      //analyze profitability of all items and write relevant info to a file
+      analysisClient.getSimpleCostAnalysis(pairedProducts);
       pairedProducts.writeToFile('paired_items.txt');
     });
   });

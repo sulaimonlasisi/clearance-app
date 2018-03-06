@@ -55,11 +55,13 @@ class AmazonProduct {
   // Returns an object containing the product's dimensions.
   _getProductDimensions(dimensions) {
     if (dimensions) {
+      //sometimes, dimensions can be available and some of its attributes would still be unavailable
+      //so, checking each attribute's availability independently
       return {
-        width: dimensions['ns2:Width'],
-        height: dimensions['ns2:Height'],
-        length: dimensions['ns2:Length'],
-        weight: dimensions['ns2:Weight']
+        width: dimensions['ns2:Width'] ? dimensions['ns2:Width'] : 'UNKNOWN',
+        height: dimensions['ns2:Height'] ? dimensions['ns2:Height'] : 'UNKNOWN',
+        length: dimensions['ns2:Length'] ? dimensions['ns2:Length'] : 'UNKNOWN',
+        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN'
       }
     } else {
       return {
