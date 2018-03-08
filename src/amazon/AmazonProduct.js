@@ -1,4 +1,4 @@
-const salesRankings = require('./../sales_rankings');
+const salesRankings = require('./sales_rankings');
 
 /* Class representing a store item */
 class AmazonProduct {
