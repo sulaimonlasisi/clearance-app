@@ -1,6 +1,7 @@
 const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
 const AnalysisClient = require('../src/analysis/AnalysisClient');
+
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
   let analysisClient = new AnalysisClient();

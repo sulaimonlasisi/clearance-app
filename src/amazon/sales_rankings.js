@@ -1,5 +1,5 @@
 /* Constants for Amazon Category Sales Rankings
-  SalesRankings represent the rank number a product must under to be within the top 50%
+  SalesRankings represent the rank number a product must be under to be within the top 50%
   of item in that category. The numbers may not be exactly correct, but should be in the ballpark.
   Rankings extrapolated from this chart - https://sourcingsimplifiers.com/bsr-chart/
   Comments signify the category from the above chart that the ranking was extrapolated from.

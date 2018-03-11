@@ -15,7 +15,6 @@ class AmazonProduct {
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN'
     this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
-    this.MIN_SELL_PRICE = 10; // $10
   }
 
   // Returns a string of the basic product information.
@@ -24,9 +23,9 @@ class AmazonProduct {
     `RANK: ${this.bestSalesRanking.rank}, RANK CATEGORY: ${this.bestSalesRanking.categoryId}` + "\r\n";
   }
 
-  /* Profitable products are ones with a good sales ranking and a known sales price. */
+  /* Profitable products are ones with a good sales ranking and a known sales price and weight. */
   isProfitable() {
-    return this._isPopular() && this._isWithinSellPrice();
+    return this._hasKnownInfo() && this._isPopular();
   }
 
   // Private methods
@@ -44,12 +43,10 @@ class AmazonProduct {
   }
 
   /* 
-    Determine if this amazon product has a known sell price and if it's greater than the required
-    minimum. Anything less than the MIN_SELL_PRICE will likely not yield profit after shipping, tax, 
-    and initial purchase costs.
+    Determine if this amazon product has a known sell price and weight.
   */
-  _isWithinSellPrice() {
-    return this.price !== 'UNKNOWN' && this.price >= this.MIN_SELL_PRICE;
+  _hasKnownInfo() {
+    return this.price !== 'UNKNOWN' && this.dimensions.weight != 'UNKNOWN'
   }
 
   // Returns an object containing the product's dimensions.
