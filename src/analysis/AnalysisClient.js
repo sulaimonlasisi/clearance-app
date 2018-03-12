@@ -96,14 +96,17 @@ class AnalysisClient {
   /* does simple analysis of cost per item based on shipping and weight */
   getSimpleCostAnalysis(pairedProductsList) {
     let that = this;
+    let analyzedProduct;
+
     pairedProductsList.products.forEach(function(pairedProduct){
-      //checks if amazon price is known and weight is known
-      //at the moment, we use these two features to calculate profit.
-      //In the future, we might have a better idea of what other features to use or not use
-      if (pairedProduct.amazonProd.price != 'UNKNOWN' && pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN') {
-        that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+      // We already know all amazon products have a known price and weight since they are filtered 
+      // in the AmazonProduct class.
+      analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
+      // Only interested in items with a high margin of profit.
+      if (analyzedProduct.basePercentROI >= 25) {
+        that.analyzedProductsInfo.push(analyzedProduct);
       }
-    })
+    });
     
     //write price analysis info for analyzed products
     this.writeToFile("analyzed_items_info.txt");
