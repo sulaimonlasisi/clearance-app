@@ -31,7 +31,8 @@ class AmazonProduct {
         width: dimensions['ns2:Width'] ? dimensions['ns2:Width'] : 'UNKNOWN',
         height: dimensions['ns2:Height'] ? dimensions['ns2:Height'] : 'UNKNOWN',
         length: dimensions['ns2:Length'] ? dimensions['ns2:Length'] : 'UNKNOWN',
-        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN'
+        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN',
+        weightComputed: dimensions['ns2:Weight'] ? false : true
       }
     } else {
       return {

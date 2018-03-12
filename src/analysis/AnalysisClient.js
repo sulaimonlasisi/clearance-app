@@ -93,15 +93,65 @@ class AnalysisClient {
     analyzed_items_file.end();
   }
 
+
+  assignRepresentativeWeightToItem(pairedProductsList){
+    /*
+    If we have seen at least five item in a category, assign 3/4 of the max weight in a category to an item 
+    in that category whose weight is unknown
+    The choice of 3/4 of max is arbitrary and can be changed in the future.    
+    If we have seen less than 5, use the max weight instead because we don't know enough about weights in category
+    */
+    let representativeCount = 5;
+    let representativeWeight = 0.75;
+    let categoriesRepWeight  = {};
+    let categoriesCount  = {};
+    pairedProductsList.products.forEach(function(pairedProduct){
+      //if weight is known and categoryId is defined
+      if (pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN' && pairedProduct.amazonProd.bestSalesRanking.categoryId) {
+        if (categoriesRepWeight.hasOwnProperty(pairedProduct.amazonProd.bestSalesRanking.categoryId)) {
+          if (categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] < Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']))) {
+            categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+          }
+          categoriesCount[pairedProduct.amazonProd.bestSalesRanking.categoryId] +=1;
+        }
+        else {
+          categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+          categoriesCount[pairedProduct.amazonProd.bestSalesRanking.categoryId] =1;
+        }
+      }
+    });
+
+    for (var category in categoriesRepWeight) {
+      if (categoriesCount[category] >= representativeCount) {
+        categoriesRepWeight[category] = Math.ceil(categoriesRepWeight[category]*representativeWeight);
+      }
+    }
+    return categoriesRepWeight;
+  }
+
   /* does simple analysis of cost per item based on shipping and weight */
   getSimpleCostAnalysis(pairedProductsList) {
     let that = this;
+    //use representative weight of each category to assign weight values to items with unknown weights
+    //this helps to compute their shipping price and see what is the profit potential for such items.
+    let representativeWeights = that.assignRepresentativeWeightToItem(pairedProductsList)
+       
     pairedProductsList.products.forEach(function(pairedProduct){
-      //checks if amazon price is known and weight is known
-      //at the moment, we use these two features to calculate profit.
-      //In the future, we might have a better idea of what other features to use or not use
-      if (pairedProduct.amazonProd.price != 'UNKNOWN' && pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN') {
-        that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+      //checks if amazon price is known
+      if (pairedProduct.amazonProd.price != 'UNKNOWN') {
+        //if weight unknown, if we have computed_weight for category, assign it and set_flag 
+        //there will be items whose category we don't have weight values for, let those slip through
+        if (pairedProduct.amazonProd.dimensions.weight == 'UNKNOWN') {
+          if (representativeWeights.hasOwnProperty(pairedProduct.amazonProd.bestSalesRanking.categoryId)) {
+            pairedProduct.amazonProd.dimensions.weightComputed = true;
+            pairedProduct.amazonProd.dimensions.weight = {};
+            pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.bestSalesRanking.categoryId];
+            that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+          }
+        } else {
+          that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+        }
+        
       }
     })
     
