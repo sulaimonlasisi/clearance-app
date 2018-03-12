@@ -24,6 +24,7 @@ class AmazonProductList {
   // Create a list of amazon products.
   productsList(productsJSON) {
     let products = [];
+    let amazonProduct;
 
     if (productsJSON.GetMatchingProductForIdResponse && productsJSON.GetMatchingProductForIdResponse.GetMatchingProductForIdResult) {
       productsJSON.GetMatchingProductForIdResponse.GetMatchingProductForIdResult.forEach(function(product) {
@@ -33,7 +34,17 @@ class AmazonProductList {
         For now, we will omit scenarios where there are multiple products with the same UPC.
         */
         if (product.Products && !Array.isArray(product.Products.Product)) {
-          products.push(new AmazonProduct(product.Products.Product, product['A$'].Id)); // Amazon's json structure is a bit weird...
+          /* Only add products that have item information and are profitable.
+            I think the Amazon API will sometimes return products with no information once the
+            request limit for a given time period has been exceeded. This is a catch to 
+            ensure the program still completes with no errors.
+          */
+          if (product.Products.Product.AttributeSets) {
+            amazonProduct = new AmazonProduct(product.Products.Product, product['A$'].Id);
+            if (amazonProduct.isProfitable()) {
+              products.push(amazonProduct);
+            }
+          }
         }
       });
     }

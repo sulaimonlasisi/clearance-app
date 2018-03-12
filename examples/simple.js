@@ -1,6 +1,7 @@
 const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
 const AnalysisClient = require('../src/analysis/AnalysisClient');
+
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
   let analysisClient = new AnalysisClient();
@@ -12,7 +13,7 @@ function testAmazonProducts() {
     .then(function(pairedProducts) {
       //analyze profitability of all items and write relevant info to a file
       analysisClient.getSimpleCostAnalysis(pairedProducts);
-      pairedProducts.writeToFile('paired_items.txt');
+      //pairedProducts.writeToFile('paired_items.txt');
     });
   });
 }

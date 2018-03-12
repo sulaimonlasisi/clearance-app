@@ -11,12 +11,14 @@ class AnalysisClient {
       approxTaxRate - accounts for tax on item when purchasing from walmart
       effectiveValueOfOurDollar - because of sites like giftcardgranny.com and eBay, for every dollar we spend
       at walmart, we could actually be spending less e.g. 98 cents.
+      ROIThreshold - the cutoff ROI for items we want to consider buying
   */
   constructor() {
     this.fbaShippingCostPerPound = 0.50; 
     this.approxTaxRate = 0.06;
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
+    this.ROIThreshold = 25;
   }
 
   //returns the total amount paid to walmart when item is purchased
@@ -105,6 +107,7 @@ class AnalysisClient {
     let representativeWeight = 0.75;
     let categoriesRepWeight  = {};
     let categoriesCount  = {};
+    
     pairedProductsList.products.forEach(function(pairedProduct){
       //if weight is known and categoryId is defined
       if (pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN' && pairedProduct.amazonProd.bestSalesRanking.categoryId) {
@@ -134,7 +137,8 @@ class AnalysisClient {
     let that = this;
     //use representative weight of each category to assign weight values to items with unknown weights
     //this helps to compute their shipping price and see what is the profit potential for such items.
-    let representativeWeights = that.assignRepresentativeWeightToItem(pairedProductsList)
+    let representativeWeights = that.assignRepresentativeWeightToItem(pairedProductsList);
+    let analyzedProduct;
        
     pairedProductsList.products.forEach(function(pairedProduct){
       //checks if amazon price is known
@@ -146,15 +150,16 @@ class AnalysisClient {
             pairedProduct.amazonProd.dimensions.weightComputed = true;
             pairedProduct.amazonProd.dimensions.weight = {};
             pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.bestSalesRanking.categoryId];
-            that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+            analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
           }
         } else {
-          that.analyzedProductsInfo.push(that.getAnalyzedProductInfo(pairedProduct));
+          analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
         }
-        
       }
-    })
-    
+      if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
+        that.analyzedProductsInfo.push(analyzedProduct);
+      } 
+    });
     //write price analysis info for analyzed products
     this.writeToFile("analyzed_items_info.txt");
   }
