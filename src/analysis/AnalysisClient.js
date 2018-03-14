@@ -103,23 +103,23 @@ class AnalysisClient {
     The choice of 3/4 of max is arbitrary and can be changed in the future.    
     If we have seen less than 5, use the max weight instead because we don't know enough about weights in category
     */
-    let representativeCount = 5;
-    let representativeWeight = 0.75;
+    const representativeCount = 5;
+    const representativeWeight = 0.75;
     let categoriesRepWeight  = {};
     let categoriesCount  = {};
     
     pairedProductsList.products.forEach(function(pairedProduct){
       //if weight is known and categoryId is defined
-      if (pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN' && pairedProduct.amazonProd.bestSalesRanking.categoryId) {
-        if (categoriesRepWeight.hasOwnProperty(pairedProduct.amazonProd.bestSalesRanking.categoryId)) {
-          if (categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] < Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']))) {
-            categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+      if (pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN' && pairedProduct.amazonProd.category) {
+        if (categoriesRepWeight.hasOwnProperty(pairedProduct.amazonProd.category)) {
+          if (categoriesRepWeight[pairedProduct.amazonProd.category] < Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']))) {
+            categoriesRepWeight[pairedProduct.amazonProd.category] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
           }
-          categoriesCount[pairedProduct.amazonProd.bestSalesRanking.categoryId] +=1;
+          categoriesCount[pairedProduct.amazonProd.category] +=1;
         }
         else {
-          categoriesRepWeight[pairedProduct.amazonProd.bestSalesRanking.categoryId] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
-          categoriesCount[pairedProduct.amazonProd.bestSalesRanking.categoryId] =1;
+          categoriesRepWeight[pairedProduct.amazonProd.category] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+          categoriesCount[pairedProduct.amazonProd.category] =1;
         }
       }
     });
@@ -141,20 +141,17 @@ class AnalysisClient {
     let analyzedProduct;
        
     pairedProductsList.products.forEach(function(pairedProduct){
-      //checks if amazon price is known
-      if (pairedProduct.amazonProd.price != 'UNKNOWN') {
-        //if weight unknown, if we have computed_weight for category, assign it and set_flag 
-        //there will be items whose category we don't have weight values for, let those slip through
-        if (pairedProduct.amazonProd.dimensions.weight == 'UNKNOWN') {
-          if (representativeWeights.hasOwnProperty(pairedProduct.amazonProd.bestSalesRanking.categoryId)) {
-            pairedProduct.amazonProd.dimensions.weightComputed = true;
-            pairedProduct.amazonProd.dimensions.weight = {};
-            pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.bestSalesRanking.categoryId];
-            analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
-          }
-        } else {
+      //if weight unknown, if we have computed_weight for category, assign it and set_flag 
+      //there will be items whose category we don't have weight values for, let those slip through
+      if (pairedProduct.amazonProd.dimensions.weight == 'UNKNOWN') {
+        if (representativeWeights.hasOwnProperty(pairedProduct.amazonProd.category)) {
+          pairedProduct.amazonProd.dimensions.weightComputed = true;
+          pairedProduct.amazonProd.dimensions.weight = {};
+          pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.category];
           analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
         }
+      } else {
+        analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
       }
       if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
         that.analyzedProductsInfo.push(analyzedProduct);
