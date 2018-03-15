@@ -25,7 +25,7 @@ class AmazonProduct {
 
   /* Profitable products are ones with a good sales ranking and a known sales price and weight. */
   isProfitable() {
-    return this._hasKnownInfo() && this._isPopular();
+    return this._hasKnownPrice() && this._isPopular();
   }
 
   // Private methods
@@ -45,7 +45,7 @@ class AmazonProduct {
   /* 
     Determine if this amazon product has a known sell price.
   */
-  _hasKnownInfo() {
+  _hasKnownPrice() {
     return this.price !== 'UNKNOWN'
   }
 

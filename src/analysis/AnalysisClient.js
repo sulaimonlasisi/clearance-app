@@ -22,20 +22,20 @@ class AnalysisClient {
   }
 
   //returns the total amount paid to walmart when item is purchased
-  getTotalAmountPaidToWalmart(walmartProduct) {
+  _getTotalAmountPaidToWalmart(walmartProduct) {
     return (parseFloat(walmartProduct.price) + parseFloat(walmartProduct.shippingCost) + (this.approxTaxRate*parseFloat(walmartProduct.price)));
   }
   
   //returns approx cost of shipping to AMZN as an FBA user which 
   //will be paid whether we ship from home or from reseller
   //in the future, this should also include approx cost of stocking items on amazon shelf
-  getApproxAmazonFBACost(amazonProduct) {
+  _getApproxAmazonFBACost(amazonProduct) {
     //using the ceiling function instead of round to avoid underestimation.
     return (Math.ceil(parseFloat(amazonProduct.dimensions.weight['C$'])) * this.fbaShippingCostPerPound);
   }
 
-  getBasicROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmart = +this.getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
+  _getBasicROIData(pairedProduct, amazonFBACost){
+    let totalPaidToWalmart = +this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
     let totalCostPerItem = (totalPaidToWalmart + amazonFBACost);
     let dollarROIPerItem = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItem).toFixed(2);    
     return {
@@ -52,8 +52,8 @@ class AnalysisClient {
     only costs us 95 cents. To start, let's use a 2% savings of what we spend at Walmart, 
     although I have seen deals for >=3% consistently.
   */
-  getGCGROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this.getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
+  _getGCGROIData(pairedProduct, amazonFBACost){
+    let totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
     let totalCostPerItemWithGCG = (totalPaidToWalmartWithGCG + amazonFBACost);
     let dollarROIPerItemWithGCG = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItemWithGCG).toFixed(2);
     return {
@@ -63,10 +63,10 @@ class AnalysisClient {
     }
   }
 
-  getAnalyzedProductInfo(pairedProduct){
-    let amazonFBACost = +this.getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
-    let gCGROIData = this.getGCGROIData(pairedProduct, amazonFBACost);
-    let basicROIData = this.getBasicROIData(pairedProduct, amazonFBACost);
+  _getAnalyzedProductInfo(pairedProduct){
+    let amazonFBACost = +this._getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
+    let gCGROIData = this._getGCGROIData(pairedProduct, amazonFBACost);
+    let basicROIData = this._getBasicROIData(pairedProduct, amazonFBACost);
     let analyzedProductInfo =  {
       baseTotalPaid: basicROIData.basicTotalCostPerItem,
       baseDollarROI: basicROIData.basicDollarROIPerItem,
@@ -80,7 +80,7 @@ class AnalysisClient {
   }
 
   // Save all analyzed products info to a file.
-  writeToFile(fileName) {
+  _writeToFile(fileName) {
     let textLine;
     let analyzed_items_file = fs.createWriteStream(fileName);
     analyzed_items_file.on('error', function(err) { console.log(err) });
@@ -96,7 +96,7 @@ class AnalysisClient {
   }
 
 
-  assignRepresentativeWeightToItem(pairedProductsList){
+  _assignRepresentativeWeightToItem(pairedProductsList){
     /*
     If we have seen at least five item in a category, assign 3/4 of the max weight in a category to an item 
     in that category whose weight is unknown
@@ -137,7 +137,7 @@ class AnalysisClient {
     let that = this;
     //use representative weight of each category to assign weight values to items with unknown weights
     //this helps to compute their shipping price and see what is the profit potential for such items.
-    let representativeWeights = that.assignRepresentativeWeightToItem(pairedProductsList);
+    let representativeWeights = that._assignRepresentativeWeightToItem(pairedProductsList);
     let analyzedProduct;
        
     pairedProductsList.products.forEach(function(pairedProduct){
@@ -148,17 +148,17 @@ class AnalysisClient {
           pairedProduct.amazonProd.dimensions.weightComputed = true;
           pairedProduct.amazonProd.dimensions.weight = {};
           pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.category];
-          analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
+          analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
         }
       } else {
-        analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
+        analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
       }
       if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
         that.analyzedProductsInfo.push(analyzedProduct);
       } 
     });
     //write price analysis info for analyzed products
-    this.writeToFile("analyzed_items_info.txt");
+    this._writeToFile("analyzed_items_info.txt");
   }
 }
 
