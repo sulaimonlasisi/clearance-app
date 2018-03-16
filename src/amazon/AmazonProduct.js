@@ -13,7 +13,7 @@ class AmazonProduct {
     this.dimensions = this._getProductDimensions(product.AttributeSets['ns2:ItemAttributes']['ns2:PackageDimensions'])
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
-    this.upc = UPC ? UPC : 'UNKNOWN'
+    this.upc = UPC ? UPC : 'UNKNOWN';
     this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
   }
 
@@ -25,7 +25,7 @@ class AmazonProduct {
 
   /* Profitable products are ones with a good sales ranking and a known sales price and weight. */
   isProfitable() {
-    return this._hasKnownInfo() && this._isPopular();
+    return this._hasKnownPrice() && this._isPopular();
   }
 
   // Private methods
@@ -43,10 +43,10 @@ class AmazonProduct {
   }
 
   /* 
-    Determine if this amazon product has a known sell price and weight.
+    Determine if this amazon product has a known sell price.
   */
-  _hasKnownInfo() {
-    return this.price !== 'UNKNOWN' && this.dimensions.weight != 'UNKNOWN'
+  _hasKnownPrice() {
+    return this.price !== 'UNKNOWN'
   }
 
   // Returns an object containing the product's dimensions.
@@ -58,7 +58,8 @@ class AmazonProduct {
         width: dimensions['ns2:Width'] ? dimensions['ns2:Width'] : 'UNKNOWN',
         height: dimensions['ns2:Height'] ? dimensions['ns2:Height'] : 'UNKNOWN',
         length: dimensions['ns2:Length'] ? dimensions['ns2:Length'] : 'UNKNOWN',
-        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN'
+        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN',
+        weightComputed: dimensions['ns2:Weight'] ? false : true
       }
     } else {
       return {

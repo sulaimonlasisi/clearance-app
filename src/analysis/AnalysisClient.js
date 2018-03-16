@@ -11,29 +11,31 @@ class AnalysisClient {
       approxTaxRate - accounts for tax on item when purchasing from walmart
       effectiveValueOfOurDollar - because of sites like giftcardgranny.com and eBay, for every dollar we spend
       at walmart, we could actually be spending less e.g. 98 cents.
+      ROIThreshold - the cutoff ROI for items we want to consider buying
   */
   constructor() {
     this.fbaShippingCostPerPound = 0.50; 
     this.approxTaxRate = 0.06;
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
+    this.ROIThreshold = 25;
   }
 
   //returns the total amount paid to walmart when item is purchased
-  getTotalAmountPaidToWalmart(walmartProduct) {
+  _getTotalAmountPaidToWalmart(walmartProduct) {
     return (parseFloat(walmartProduct.price) + parseFloat(walmartProduct.shippingCost) + (this.approxTaxRate*parseFloat(walmartProduct.price)));
   }
   
   //returns approx cost of shipping to AMZN as an FBA user which 
   //will be paid whether we ship from home or from reseller
   //in the future, this should also include approx cost of stocking items on amazon shelf
-  getApproxAmazonFBACost(amazonProduct) {
+  _getApproxAmazonFBACost(amazonProduct) {
     //using the ceiling function instead of round to avoid underestimation.
     return (Math.ceil(parseFloat(amazonProduct.dimensions.weight['C$'])) * this.fbaShippingCostPerPound);
   }
 
-  getBasicROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmart = +this.getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
+  _getBasicROIData(pairedProduct, amazonFBACost){
+    let totalPaidToWalmart = +this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
     let totalCostPerItem = (totalPaidToWalmart + amazonFBACost);
     let dollarROIPerItem = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItem).toFixed(2);    
     return {
@@ -50,8 +52,8 @@ class AnalysisClient {
     only costs us 95 cents. To start, let's use a 2% savings of what we spend at Walmart, 
     although I have seen deals for >=3% consistently.
   */
-  getGCGROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this.getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
+  _getGCGROIData(pairedProduct, amazonFBACost){
+    let totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
     let totalCostPerItemWithGCG = (totalPaidToWalmartWithGCG + amazonFBACost);
     let dollarROIPerItemWithGCG = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItemWithGCG).toFixed(2);
     return {
@@ -61,10 +63,10 @@ class AnalysisClient {
     }
   }
 
-  getAnalyzedProductInfo(pairedProduct){
-    let amazonFBACost = +this.getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
-    let gCGROIData = this.getGCGROIData(pairedProduct, amazonFBACost);
-    let basicROIData = this.getBasicROIData(pairedProduct, amazonFBACost);
+  _getAnalyzedProductInfo(pairedProduct){
+    let amazonFBACost = +this._getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
+    let gCGROIData = this._getGCGROIData(pairedProduct, amazonFBACost);
+    let basicROIData = this._getBasicROIData(pairedProduct, amazonFBACost);
     let analyzedProductInfo =  {
       baseTotalPaid: basicROIData.basicTotalCostPerItem,
       baseDollarROI: basicROIData.basicDollarROIPerItem,
@@ -78,7 +80,7 @@ class AnalysisClient {
   }
 
   // Save all analyzed products info to a file.
-  writeToFile(fileName) {
+  _writeToFile(fileName) {
     let textLine;
     let analyzed_items_file = fs.createWriteStream(fileName);
     analyzed_items_file.on('error', function(err) { console.log(err) });
@@ -93,23 +95,70 @@ class AnalysisClient {
     analyzed_items_file.end();
   }
 
+
+  _assignRepresentativeWeightToItem(pairedProductsList){
+    /*
+    If we have seen at least five item in a category, assign 3/4 of the max weight in a category to an item 
+    in that category whose weight is unknown
+    The choice of 3/4 of max is arbitrary and can be changed in the future.    
+    If we have seen less than 5, use the max weight instead because we don't know enough about weights in category
+    */
+    const representativeCount = 5;
+    const representativeWeight = 0.75;
+    let categoriesRepWeight  = {};
+    let categoriesCount  = {};
+    
+    pairedProductsList.products.forEach(function(pairedProduct){
+      //if weight is known and categoryId is defined
+      if (pairedProduct.amazonProd.dimensions.weight != 'UNKNOWN' && pairedProduct.amazonProd.category) {
+        if (categoriesRepWeight.hasOwnProperty(pairedProduct.amazonProd.category)) {
+          if (categoriesRepWeight[pairedProduct.amazonProd.category] < Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']))) {
+            categoriesRepWeight[pairedProduct.amazonProd.category] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+          }
+          categoriesCount[pairedProduct.amazonProd.category] +=1;
+        }
+        else {
+          categoriesRepWeight[pairedProduct.amazonProd.category] = Math.ceil(parseFloat(pairedProduct.amazonProd.dimensions.weight['C$']));
+          categoriesCount[pairedProduct.amazonProd.category] =1;
+        }
+      }
+    });
+
+    for (var category in categoriesRepWeight) {
+      if (categoriesCount[category] >= representativeCount) {
+        categoriesRepWeight[category] = Math.ceil(categoriesRepWeight[category]*representativeWeight);
+      }
+    }
+    return categoriesRepWeight;
+  }
+
   /* does simple analysis of cost per item based on shipping and weight */
   getSimpleCostAnalysis(pairedProductsList) {
     let that = this;
+    //use representative weight of each category to assign weight values to items with unknown weights
+    //this helps to compute their shipping price and see what is the profit potential for such items.
+    let representativeWeights = that._assignRepresentativeWeightToItem(pairedProductsList);
     let analyzedProduct;
-
+       
     pairedProductsList.products.forEach(function(pairedProduct){
-      // We already know all amazon products have a known price and weight since they are filtered 
-      // in the AmazonProduct class.
-      analyzedProduct = that.getAnalyzedProductInfo(pairedProduct);
-      // Only interested in items with a high margin of profit.
-      if (analyzedProduct.basePercentROI >= 25) {
-        that.analyzedProductsInfo.push(analyzedProduct);
+      //if weight unknown, if we have computed_weight for category, assign it and set_flag 
+      //there will be items whose category we don't have weight values for, let those slip through
+      if (pairedProduct.amazonProd.dimensions.weight == 'UNKNOWN') {
+        if (representativeWeights.hasOwnProperty(pairedProduct.amazonProd.category)) {
+          pairedProduct.amazonProd.dimensions.weightComputed = true;
+          pairedProduct.amazonProd.dimensions.weight = {};
+          pairedProduct.amazonProd.dimensions.weight['C$'] = representativeWeights[pairedProduct.amazonProd.category];
+          analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
+        }
+      } else {
+        analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
       }
+      if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
+        that.analyzedProductsInfo.push(analyzedProduct);
+      } 
     });
-    
     //write price analysis info for analyzed products
-    this.writeToFile("analyzed_items_info.txt");
+    this._writeToFile("analyzed_items_info.txt");
   }
 }
 

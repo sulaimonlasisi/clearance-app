@@ -13,7 +13,7 @@ function testAmazonProducts() {
     .then(function(pairedProducts) {
       //analyze profitability of all items and write relevant info to a file
       analysisClient.getSimpleCostAnalysis(pairedProducts);
-      pairedProducts.writeToFile('paired_items.txt');
+      //pairedProducts.writeToFile('paired_items.txt');
     });
   });
 }
