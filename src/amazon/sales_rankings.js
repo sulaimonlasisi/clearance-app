@@ -26,6 +26,7 @@ const salesRankings = {
   "Kitchen": 15169390, // Estimated from Home & Kitchen
   "Lawn & Patio": 1189690, // Patio, Lawn & Garden
   "Lighting": 1682760, // Estimated from Tools & Home Improvement
+  "Luggage": 307790, // Estimated from Luggage & Travel Gear
   "Major Appliances": 442230, // Appliances
   "Music": 3514880, // CDs & Vinyl
   "Musical Instruments": 359270, // Musical Instruments
