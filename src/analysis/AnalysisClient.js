@@ -204,10 +204,6 @@ class AnalysisClient {
     
     //write all data into separate file for each category
     this._writeAllCategories(categorizedItems);
-
-
-    //write price analysis info for analyzed products
-    //this._writeToFile("analyzed_items_info.txt");
   }
 }
 
