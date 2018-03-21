@@ -1,11 +1,5 @@
 # environment variables
 *.env
 
-# text files
-special_feeds_items.txt
-paginated_special_feeds_items.txt
-subcategory_info.txt
-category_info.txt
-amazon_items.txt
-paired_items.txt
-analyzed_items_info.txt
+# all text files
+*.txt

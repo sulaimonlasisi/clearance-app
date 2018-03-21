@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 /* Class for handling product profitability analysis */
 class AnalysisClient {
@@ -74,25 +75,41 @@ class AnalysisClient {
       gCGTotalPaid: gCGROIData.gCGTotalCostPerItem,
       gCGDollarROI: gCGROIData.gCGDollarROIPerItem,
       gCGPercentROI: gCGROIData.gCGPercentROIPerItem,
-      upc: pairedProduct.amazonProd.upc
+      upc: pairedProduct.amazonProd.upc,
+      category: pairedProduct.amazonProd.category,
+      isWeightComputed: pairedProduct.amazonProd.dimensions.weightComputed
     }
     return analyzedProductInfo;
   }
 
   // Save all analyzed products info to a file.
-  _writeToFile(fileName) {
+  _writeToFile(fileName, categorizedItems) {
     let textLine;
-    let analyzed_items_file = fs.createWriteStream(fileName);
-    analyzed_items_file.on('error', function(err) { console.log(err) });
-    this.analyzedProductsInfo.forEach(function(analyzedProductInfo) {
+    let analyzedItemsFile = fs.createWriteStream(fileName);
+    analyzedItemsFile.on('error', function(err) { console.log(err) });
+    categorizedItems.forEach(function(analyzedProductInfo) {
       textLine = `UPC: ${analyzedProductInfo.upc}, BASE TOTAL COST: ${analyzedProductInfo.baseTotalPaid}, ` + 
         `BASE DOLLAR ROI: ${analyzedProductInfo.baseDollarROI}, BASE PERCENT ROI: ${analyzedProductInfo.basePercentROI}, ` + 
         `GCG TOTAL COST: ${analyzedProductInfo.gCGTotalPaid}, GCG DOLLAR ROI: ${analyzedProductInfo.gCGDollarROI}, ` + 
-        `GCG PERCENT ROI: ${analyzedProductInfo.gCGPercentROI}`+"\r\n";
-      analyzed_items_file.write(textLine);
+        `GCG PERCENT ROI: ${analyzedProductInfo.gCGPercentROI}, WEIGHT COMPUTED: ${analyzedProductInfo.isWeightComputed}`+"\r\n";
+      analyzedItemsFile.write(textLine);
     });
 
-    analyzed_items_file.end();
+    analyzedItemsFile.end();
+  }
+
+  // writes all categories to their separate files in a particular folder
+  _writeAllCategories(categorizedItems){
+    let category;
+    let categorizedItemsFileName;
+    let analysisFolderName = path.join(__dirname, "results", "/");
+    if (!fs.existsSync(analysisFolderName)) {
+      fs.mkdirSync(analysisFolderName);
+    }    
+    for (category in categorizedItems) {
+      categorizedItemsFileName = analysisFolderName+category.toLowerCase()+".txt";
+      this._writeToFile(categorizedItemsFileName, categorizedItems[category]);
+    }
   }
 
 
@@ -131,6 +148,25 @@ class AnalysisClient {
     }
     return categoriesRepWeight;
   }
+  
+  _filterProductsToCategories(){
+    /* filters all analyzed products into different categories because
+      it is possible that we will not be able to sell in some categories.
+      Once we know those categories, we won't have to worry about products in there.
+      When we become eligible to sell in those categories, we can look at those items then.
+    */
+    let categorizedItems = {};
+    this.analyzedProductsInfo.forEach(function (analyzedProductInfo) {
+      if (categorizedItems.hasOwnProperty(analyzedProductInfo.category)) {
+        categorizedItems[analyzedProductInfo.category].push(analyzedProductInfo);
+      }
+      else{
+        categorizedItems[analyzedProductInfo.category] = [];
+        categorizedItems[analyzedProductInfo.category].push(analyzedProductInfo);
+      }
+    })
+    return categorizedItems;
+  }
 
   /* does simple analysis of cost per item based on shipping and weight */
   getSimpleCostAnalysis(pairedProductsList) {
@@ -157,8 +193,11 @@ class AnalysisClient {
         that.analyzedProductsInfo.push(analyzedProduct);
       } 
     });
-    //write price analysis info for analyzed products
-    this._writeToFile("analyzed_items_info.txt");
+
+    let categorizedItems = this._filterProductsToCategories();
+    
+    //write all data into separate file for each category
+    this._writeAllCategories(categorizedItems);
   }
 }
 

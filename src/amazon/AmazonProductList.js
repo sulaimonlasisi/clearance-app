@@ -39,7 +39,7 @@ class AmazonProductList {
             request limit for a given time period has been exceeded. This is a catch to 
             ensure the program still completes with no errors.
           */
-          if (product.Products.Product.AttributeSets) {
+          if (product.Products.Product && product.Products.Product.AttributeSets) {
             amazonProduct = new AmazonProduct(product.Products.Product, product['A$'].Id);
             if (amazonProduct.isProfitable()) {
               products.push(amazonProduct);
