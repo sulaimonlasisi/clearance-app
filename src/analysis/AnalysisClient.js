@@ -103,7 +103,6 @@ class AnalysisClient {
     let category;
     let categorizedItemsFileName;
     let analysisFolderName = path.join(__dirname, "results", "/");
-    console.log(analysisFolderName)
     if (!fs.existsSync(analysisFolderName)) {
       fs.mkdirSync(analysisFolderName);
     }    
@@ -149,20 +148,15 @@ class AnalysisClient {
     }
     return categoriesRepWeight;
   }
-  /* filters all analyzed products into different categories because
-    it is possible that we will not be able to sell in some categories.
-    Once we know those categories, we won't have to worry about products in there.
-    When we become eligible to sell in those categories, we can look at those items then.
-  */
-  _filterProductsToCategories(analyzedProductsInfo){
-    /*
-    For each item in analyzedProductsInfo
-    If its category is in array, add it to the category
-    else create an array object with key being category and push item to it
-    return categories object
+  
+  _filterProductsToCategories(){
+    /* filters all analyzed products into different categories because
+      it is possible that we will not be able to sell in some categories.
+      Once we know those categories, we won't have to worry about products in there.
+      When we become eligible to sell in those categories, we can look at those items then.
     */
     let categorizedItems = {};
-    analyzedProductsInfo.forEach(function (analyzedProductInfo) {
+    this.analyzedProductsInfo.forEach(function (analyzedProductInfo) {
       if (categorizedItems.hasOwnProperty(analyzedProductInfo.category)) {
         categorizedItems[analyzedProductInfo.category].push(analyzedProductInfo);
       }
@@ -200,7 +194,7 @@ class AnalysisClient {
       } 
     });
 
-    let categorizedItems = this._filterProductsToCategories(that.analyzedProductsInfo);
+    let categorizedItems = this._filterProductsToCategories();
     
     //write all data into separate file for each category
     this._writeAllCategories(categorizedItems);
