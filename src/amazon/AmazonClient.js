@@ -2,6 +2,7 @@ const Promise = require('bluebird');
 const mwsProd = require('mws-product');
 const ProductList = require('./AmazonProductList');
 const PairedProductList = require('./../PairedProductList');
+const AnalysisClient = require('../analysis/AnalysisClient');
 
 /* Class for handling operations with Amazon's inventory */
 class AmazonClient {
@@ -20,6 +21,7 @@ class AmazonClient {
     this.sellerId  = process.env.AMAZON_SELLER_ID;
     this.app = mwsProd({auth: {sellerId: this.sellerId, accessKeyId: this.accessKey, secretKey: this.secretKey}, marketplace: 'US'});
     this.delayTime = 500; // 500ms delay. Can increase this if needed.
+    this.analysisClient = new AnalysisClient();
   }
 
   /*
@@ -29,6 +31,7 @@ class AmazonClient {
   */
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
+    let that = this;
 
     return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
     .then(function(amazonProducts) {
@@ -36,7 +39,16 @@ class AmazonClient {
         pairedProducts.addPairedProduct(amazonProduct, walmartProducts.find(item => item.upc == amazonProduct.upc));
       });
       return pairedProducts;
-    });
+    }).then(function(pairedProducts) {
+      that.getLowestOfferListingsByASIN(that.analysisClient.getSimpleCostAnalysis(pairedProducts).map(item => item.ASIN), delayIndex).then(function(lowestOfferListings) {
+        let secondaryAnalysisList = [];
+        lowestOfferListings.forEach(function (lowestOfferInfo) {
+          let matchedPairedProduct = pairedProducts.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
+          matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
+          secondaryAnalysisList.push(matchedPairedProduct);
+        })
+      })
+    })
   }
 
   /*
@@ -67,6 +79,30 @@ class AmazonClient {
       return new ProductList([]);
     });
   }
+  
+  /*
+    Gets lowest offer information for each item and returns all that 
+  */
+  getLowestOfferListingsByASIN(asinList, itemCondition = 'New', excludeMe = true, delayIndex=0) {
+    let lowestOfferListings = [];
+    return this._batchedLowestOfferListingsRequest(asinList, itemCondition, excludeMe)
+    .then(function(inspections) {
+      inspections.forEach(function(inspection) {
+        if (inspection.isFulfilled()) {
+          if (inspection.value().hasOwnProperty('GetLowestOfferListingsForASINResponse')) {
+            inspection.value().GetLowestOfferListingsForASINResponse.GetLowestOfferListingsForASINResult.forEach(function(lowestOfferInfo){
+              lowestOfferListings.push(lowestOfferInfo)
+            })
+          }
+        }
+      });
+      return lowestOfferListings;
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty list.
+      return [];
+    });
+  }
 
   /* Private methods */
 
@@ -91,6 +127,26 @@ class AmazonClient {
     }));
   }
 
+   /*
+    Batches lowest offer requests
+   */
+  _batchedLowestOfferListingsRequest(asinList, itemCondition, excludeMe, delayIndex=0) {
+    let promises = [];
+    let index=0;
+    let sliceEnd;
+    let incrementValue=20;
+
+    do {
+      sliceEnd = sliceEnd > asinList.length ? asinList.length : index + incrementValue;
+      promises.push(this._getLowestOfferListingsByASIN(asinList.slice(index, sliceEnd), itemCondition, excludeMe, index/incrementValue));
+      index+=incrementValue;
+    } while (index < asinList.length);
+
+    return Promise.all(promises.map(function(promise) {
+      return promise.reflect();
+    }));
+  }
+
   /* Make a request to Amazon to retrieve 1-5 products by their Ids. */
   _getProductsById(productIds, idType, delayIndex=0) {
     const that = this; // 'this' becomes undefined inside promise so store reference.
@@ -98,6 +154,20 @@ class AmazonClient {
     return Promise.delay(delayIndex*this.delayTime).then(function() {
       return new Promise(function (resolve, reject) {
         that.app.matchingProductForId({idType: idType, idList: productIds}, function(err, jsonResponse) {
+          !err ? resolve(jsonResponse) : reject(err);
+        });
+      });
+    });
+  }
+
+  /*
+    Make a request to Amazon to retrieve the lowest offer listings for 1-20 products by their ASIN.
+  */
+  _getLowestOfferListingsByASIN(asinList, itemCondition, excludeMe, delayIndex=0) {
+    const that = this; 
+    return Promise.delay(delayIndex*this.delayTime).then(function() {
+      return new Promise(function (resolve, reject) {
+        that.app.lowestOfferListingsForASIN({asinList: asinList, itemCondition: itemCondition, excludeMe: excludeMe}, function(err, jsonResponse) {
           !err ? resolve(jsonResponse) : reject(err);
         });
       });

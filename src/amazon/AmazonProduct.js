@@ -14,7 +14,8 @@ class AmazonProduct {
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN';
-    this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
+    this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'],
+    this.lowestOfferInfo = {};
   }
 
   // Returns a string of the basic product information.
@@ -26,6 +27,29 @@ class AmazonProduct {
   /* Profitable products are ones with a good sales ranking and a known sales price and weight. */
   isProfitable() {
     return this._hasKnownPrice() && this._isPopular();
+  }
+
+  // Returns an object containing the product's lowest offer information.
+  setLowestOfferInformation(lowestOfferInfo) {
+    debugger;
+    if (dimensions) {
+      //sometimes, dimensions can be available and some of its attributes would still be unavailable
+      //so, checking each attribute's availability independently
+      return {
+        width: dimensions['ns2:Width'] ? dimensions['ns2:Width'] : 'UNKNOWN',
+        height: dimensions['ns2:Height'] ? dimensions['ns2:Height'] : 'UNKNOWN',
+        length: dimensions['ns2:Length'] ? dimensions['ns2:Length'] : 'UNKNOWN',
+        weight: dimensions['ns2:Weight'] ? dimensions['ns2:Weight'] : 'UNKNOWN',
+        weightComputed: dimensions['ns2:Weight'] ? false : true
+      }
+    } else {
+      return {
+        width: 'UNKNOWN',
+        height: 'UNKNOWN',
+        length: 'UNKNOWN',
+        weight: 'UNKNOWN'
+      }
+    }
   }
 
   // Private methods

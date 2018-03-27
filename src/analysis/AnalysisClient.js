@@ -77,7 +77,9 @@ class AnalysisClient {
       gCGPercentROI: gCGROIData.gCGPercentROIPerItem,
       upc: pairedProduct.amazonProd.upc,
       category: pairedProduct.amazonProd.category,
-      isWeightComputed: pairedProduct.amazonProd.dimensions.weightComputed
+      isWeightComputed: pairedProduct.amazonProd.dimensions.weightComputed,
+      ASIN: pairedProduct.amazonProd.ASIN,
+      UPC: pairedProduct.amazonProd.upc
     }
     return analyzedProductInfo;
   }
@@ -197,7 +199,9 @@ class AnalysisClient {
     let categorizedItems = this._filterProductsToCategories();
     
     //write all data into separate file for each category
-    this._writeAllCategories(categorizedItems);
+    //this._writeAllCategories(categorizedItems);
+
+    return this.analyzedProductsInfo;
   }
 }
 
