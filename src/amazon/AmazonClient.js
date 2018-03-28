@@ -47,6 +47,7 @@ class AmazonClient {
           matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
           secondaryAnalysisList.push(matchedPairedProduct);
         })
+        debugger;
       })
     })
   }

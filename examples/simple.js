@@ -9,7 +9,7 @@ function testAmazonProducts() {
   .then(function(walmartProducts) {
     // For each walmart product, retrieve the correlating amazon product.
     // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
-    amazonClient.getPairedProducts(walmartProducts.products.slice(0,1000))
+    amazonClient.getPairedProducts(walmartProducts.products.slice(0,500))
     .then(function(pairedProducts) {
       console.log("Done")
       //analyze profitability of all items and write relevant info to a file
