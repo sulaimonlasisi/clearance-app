@@ -37,6 +37,26 @@ class WalmartClient {
     });
   }
 
+
+  getProductsByItemId(upcList, delayIndex=0) {
+    let itemsList = [];
+    return this._batchedWalmartItemRequest(upcList, delayIndex)
+    .then(function(inspections) {
+      inspections.forEach(function(inspection) {
+        debugger;
+        if (inspection.isFulfilled()) {
+          itemsList.push(inspection.value())
+        }
+      });
+
+      return itemsList;
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty products list.
+      return [];
+    });
+  }
+
   getItem(itemID, terra) {
     if (terra) {
       return this._get(options, "//www.walmart.com/product/terra/" + itemID);
@@ -47,10 +67,6 @@ class WalmartClient {
 
   taxonomy(delayIndex=0) {
     return this._get(`http://api.walmartlabs.com/v1/taxonomy?apiKey=${this.apiKey}`);
-  }
-
-  getItemByUPC(upcCode) {
-    return this._get(options, "//www.walmart.com/product/mobile/api/upc/" + upcCode);
   }
 
   // The items method requires additional permissions to use.
@@ -110,6 +126,7 @@ class WalmartClient {
 
       return new ProductList(items);
     }).catch(function(error) {
+      debugger;
       console.log(error);
       // Something went wrong. Return an empty products list.
       return new ProductList([]);
@@ -232,6 +249,30 @@ writeCategoryIdsToFile(){
     }));
   }
 
+
+  _batchedWalmartItemRequest(upcList, delayIndex=0) {
+    let promises = [];
+    let index = 0;
+    //let sliceEnd;
+    //let incrementValue=20;
+    do {
+      //sliceEnd = sliceEnd > upcList.length ? upcList.length : index + incrementValue;
+      promises.push(this._getItemByItemId(upcList[index], index));
+      index+=1;
+    } while (index < upcList.length);
+
+    return Promise.all(promises.map(function(promise) {
+      return promise.reflect();
+    }));
+  }
+
+  _getItemByItemId(upcCode, delayIndex=0) {
+    return this._get('http://api.walmartlabs.com/v1/items?apiKey=${this.apiKey}&upc=${upcCode}', delayIndex*this.delayTime);
+  }
 }
+
+
+
+
 
 module.exports = WalmartClient;

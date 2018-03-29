@@ -6,11 +6,11 @@ class WalmartProductList {
 
   /* productsJSON - json list of walmart products
     Instance attributes:
-      products - list of product objects with UPCs.
-  */
   constructor(productsJSON) {
     this.products = this.productsList(productsJSON);
   }
+      products - list of product objects with UPCs.
+  */
 
   // Create a list of walmart products that all have a UPC code.
   productsList(productsJSON) {
