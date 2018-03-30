@@ -196,11 +196,13 @@ class AnalysisClient {
       } 
     });
 
+
+    /* currently not used. Will be used after secondary analysis
     let categorizedItems = this._filterProductsToCategories();
     
     //write all data into separate file for each category
     //this._writeAllCategories(categorizedItems);
-
+    */
     return this.analyzedProductsInfo;
   }
 }

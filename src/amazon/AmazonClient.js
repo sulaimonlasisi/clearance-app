@@ -31,6 +31,8 @@ class AmazonClient {
   */
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
+    //temporarily using this to return print-friendly object
+    let analyzedPairedProducts = new PairedProductList();
     let that = this;
     return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
     .then(function(amazonProducts) {
@@ -43,13 +45,12 @@ class AmazonClient {
       let analyzedItemsList = that.analysisClient.getSimpleCostAnalysis(pairedProducts).map(item => item.ASIN);
       //update analyzedItem wit lowestOfferInfo and return list for further analysis
       return that.getLowestOfferListingsByASIN(analyzedItemsList, delayIndex).then(function(lowestOfferListings) {
-        let secondaryAnalysisList = [];
         lowestOfferListings.forEach(function (lowestOfferInfo) {
           let matchedPairedProduct = pairedProducts.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
           matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
-          secondaryAnalysisList.push(matchedPairedProduct);
+          analyzedPairedProducts.addPairedProduct(matchedPairedProduct.amazonProd, matchedPairedProduct.walmartProd);
         })
-        return secondaryAnalysisList;        
+        return analyzedPairedProducts;        
       })
     }).catch(function(error) {
       console.log(error);

@@ -20,10 +20,10 @@ class PairedProductList {
   writeToFile(fileName) {
     let textLine;
     let paired_items_file = fs.createWriteStream(fileName);
-
     paired_items_file.on('error', function(err) { console.log(err) });
     this.products.forEach(function(pairedProduct) {
-      textLine = `AMAZON NAME: ${pairedProduct.amazonProd.name}, AMAZON PRICE: ${pairedProduct.amazonProd.price}, ` + 
+      let amazonPrice = (Object.keys(pairedProduct.amazonProd.lowestOfferInfo).length === 0) ? pairedProduct.amazonProd.price : pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount ;
+      textLine = `AMAZON NAME: ${pairedProduct.amazonProd.name}, AMAZON PRICE: ${amazonPrice}, ` + 
         `WALMART NAME: ${pairedProduct.walmartProd.name}, WALMART PRICE: ${pairedProduct.walmartProd.price}` + "\r\n";
       paired_items_file.write(textLine);
     });
