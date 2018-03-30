@@ -38,25 +38,6 @@ class WalmartClient {
   }
 
 
-  getProductsByItemId(upcList, delayIndex=0) {
-    let itemsList = [];
-    return this._batchedWalmartItemRequest(upcList, delayIndex)
-    .then(function(inspections) {
-      inspections.forEach(function(inspection) {
-        debugger;
-        if (inspection.isFulfilled()) {
-          itemsList.push(inspection.value())
-        }
-      });
-
-      return itemsList;
-    }).catch(function(error) {
-      console.log(error);
-      // Something went wrong. Return an empty products list.
-      return [];
-    });
-  }
-
   getItem(itemID, terra) {
     if (terra) {
       return this._get(options, "//www.walmart.com/product/terra/" + itemID);
@@ -109,6 +90,7 @@ class WalmartClient {
   }
 
   getSpecialFeedItems() {
+    let that = this;
     return this._getAllSpecialFeedItems()
     .then(function(inspections) {
       /*
@@ -123,10 +105,18 @@ class WalmartClient {
           }                    
         }
       });
-
-      return new ProductList(items);
+      /*items returned by special feeds don't have real time attributes. Prices are not current
+       and some items are no longer in stock even though they appear to be in stock in special feeds.
+       The productLookup endpoint returns real time attributes for items
+       and it is called next to ensure all items we are considering are up to date.
+      */
+      //return a list of itemIds returned from all the special feeds
+      return items.map(item => item.itemId);
+    }).then(function(itemIdsList) {
+      return that.getProductsByItemId(itemIdsList.slice(0,500)).then(function (realTimeItems) {
+        return new ProductList(realTimeItems);
+      })
     }).catch(function(error) {
-      debugger;
       console.log(error);
       // Something went wrong. Return an empty products list.
       return new ProductList([]);
@@ -164,50 +154,67 @@ class WalmartClient {
   }
 
   writeSubCategoryIdsToFile(){
-  /*
-    paths are are separated by "/" between categories. max of 3 categories possible.
-    ids are separated by "_" between categories. max of 3 categories possible.
-    may not need info up to the lowest level but if we do need it for description, this
-    function will generate the classification tree
+    /*
+      paths are are separated by "/" between categories. max of 3 categories possible.
+      ids are separated by "_" between categories. max of 3 categories possible.
+      may not need info up to the lowest level but if we do need it for description, this
+      function will generate the classification tree
 
-    writes to file in format: upper_category/middle_category/lowest_category,upper-id_middle-id_lowest_id
-  */
-  this.taxonomy().then(function(data){
-    data.categories.forEach(function(category){
-      if (category.hasOwnProperty('children')){
-        category.children.forEach(function(child){
-          if (child.hasOwnProperty('children')){
-            child.children.forEach(function(grand_child){
-              let cat_info = grand_child.path + "," + grand_child.id + "\r\n";
+      writes to file in format: upper_category/middle_category/lowest_category,upper-id_middle-id_lowest_id
+    */
+    this.taxonomy().then(function(data){
+      data.categories.forEach(function(category){
+        if (category.hasOwnProperty('children')){
+          category.children.forEach(function(child){
+            if (child.hasOwnProperty('children')){
+              child.children.forEach(function(grand_child){
+                let cat_info = grand_child.path + "," + grand_child.id + "\r\n";
+                fs.appendFileSync('subcategory_info.txt', cat_info);
+              })
+            }
+            else {
+              let cat_info = child.path + "," + child.id + "\r\n";
               fs.appendFileSync('subcategory_info.txt', cat_info);
-            })
-          }
-          else {
-            let cat_info = child.path + "," + child.id + "\r\n";
-            fs.appendFileSync('subcategory_info.txt', cat_info);
-          }
-        })
-      }
-      else {
-        let cat_info = category.name + " " + category.id + "\r\n";
-        fs.appendFileSync('subcategory_info.txt', cat_info);
-      }
-    })
-  });
-}
+            }
+          })
+        }
+        else {
+          let cat_info = category.name + " " + category.id + "\r\n";
+          fs.appendFileSync('subcategory_info.txt', cat_info);
+        }
+      })
+    });
+  }
 
-writeCategoryIdsToFile(){
-  /*
-    writes category id and names to file
-  */
-  this.taxonomy().then(function(data){
-    data.categories.forEach(function(category){
-      let cat_info = category.name + "," + category.id + "\r\n";
+  writeCategoryIdsToFile(){
+    /*
+      writes category id and names to file
+    */
+    this.taxonomy().then(function(data){
+      data.categories.forEach(function(category){
+        let cat_info = category.name + "," + category.id + "\r\n";
 
-      fs.appendFileSync('category_info.txt', cat_info);
-    })
-  });
-}
+        fs.appendFileSync('category_info.txt', cat_info);
+      })
+    });
+  }
+
+  getProductsByItemId(itemIdsList, delayIndex=0) {
+    let itemsList = [];
+    return this._batchedWalmartItemRequest(itemIdsList, delayIndex)
+    .then(function(inspections) {
+      inspections.forEach(function(inspection) {
+        if (inspection.isFulfilled()) {
+          itemsList.push(...inspection.value().items)
+        }
+      });
+      return itemsList;
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty products list.
+      return [];
+    });
+  }
 
   // Private methods
 
@@ -249,25 +256,24 @@ writeCategoryIdsToFile(){
     }));
   }
 
-
-  _batchedWalmartItemRequest(upcList, delayIndex=0) {
+  _batchedWalmartItemRequest(itemIdsList, delayIndex=0) {
     let promises = [];
     let index = 0;
-    //let sliceEnd;
-    //let incrementValue=20;
+    let sliceEnd;
+    let incrementValue=20;
     do {
-      //sliceEnd = sliceEnd > upcList.length ? upcList.length : index + incrementValue;
-      promises.push(this._getItemByItemId(upcList[index], index));
-      index+=1;
-    } while (index < upcList.length);
+      sliceEnd = sliceEnd > itemIdsList.length ? itemIdsList.length : index + incrementValue;
+      promises.push(this._getItemByItemId(itemIdsList.slice(index, sliceEnd), index/incrementValue));
+      index+=incrementValue;
+    } while (index < itemIdsList.length);
 
     return Promise.all(promises.map(function(promise) {
       return promise.reflect();
     }));
   }
 
-  _getItemByItemId(upcCode, delayIndex=0) {
-    return this._get('http://api.walmartlabs.com/v1/items?apiKey=${this.apiKey}&upc=${upcCode}', delayIndex*this.delayTime);
+  _getItemByItemId(itemIdsList, delayIndex=0) {
+    return this._get(`http://api.walmartlabs.com/v1/items?ids=${itemIdsList.join(',')}&apiKey=${this.apiKey}`, delayIndex*this.delayTime);
   }
 }
 

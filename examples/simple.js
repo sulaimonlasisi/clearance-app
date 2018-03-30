@@ -7,32 +7,14 @@ function testAmazonProducts() {
   let analysisClient = new AnalysisClient();
   walmart.client.getSpecialFeedItems()
   .then(function(walmartProducts) {
-    debugger;
-    walmart.client.getProductsByItemId(walmartProducts.products.slice(0,10).map(item => item.itemId)).then(function (upcItems) {
+    /* For each walmart product, retrieve the correlating amazon product.
+    //Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
+    // Does simple analysis for our desired %ROI threshold and attach Amazon's lowest offer 
+    // information for items that have it. Returns item with no lowest offer info as well
+    */
+    amazonClient.getPairedProducts(walmartProducts.products).then(function(pairedProductsWithOfferInfo) {
       debugger;
-    })
-
-    
-    
-
-
-
-
-
-
-
-
-
-
-    /*// For each walmart product, retrieve the correlating amazon product.
-    // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
-    amazonClient.getPairedProducts(walmartProducts.products.slice(0,500))
-    .then(function(pairedProducts) {
-      console.log("Done")
-      //analyze profitability of all items and write relevant info to a file
-      //analysisClient.getSimpleCostAnalysis(pairedProducts);
-      //pairedProducts.writeToFile('paired_items.txt');
-    });*/
+    });
   });
 }
 

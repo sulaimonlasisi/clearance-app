@@ -6,18 +6,17 @@ class WalmartProductList {
 
   /* productsJSON - json list of walmart products
     Instance attributes:
+      products - list of product objects with UPCs.
+  */
   constructor(productsJSON) {
     this.products = this.productsList(productsJSON);
   }
-      products - list of product objects with UPCs.
-  */
 
   // Create a list of walmart products that all have a UPC code.
   productsList(productsJSON) {
     let products = [];
-
     productsJSON.forEach(function(product) {
-      if (product.hasOwnProperty('upc') && product.availableOnline) {
+      if (product.hasOwnProperty('upc') && product.availableOnline && product.stock.toLowerCase() === 'available') {
         products.push(new WalmartProduct(product));
       }
     });

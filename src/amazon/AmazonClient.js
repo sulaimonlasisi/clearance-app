@@ -32,7 +32,6 @@ class AmazonClient {
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
     let that = this;
-
     return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
     .then(function(amazonProducts) {
       amazonProducts.products.forEach(function(amazonProduct) {
@@ -40,16 +39,23 @@ class AmazonClient {
       });
       return pairedProducts;
     }).then(function(pairedProducts) {
-      that.getLowestOfferListingsByASIN(that.analysisClient.getSimpleCostAnalysis(pairedProducts).map(item => item.ASIN), delayIndex).then(function(lowestOfferListings) {
+      //simple cost analysis eliminates items with higher than intended %ROI from further AMZN calls and gets ASIN
+      let analyzedItemsList = that.analysisClient.getSimpleCostAnalysis(pairedProducts).map(item => item.ASIN);
+      //update analyzedItem wit lowestOfferInfo and return list for further analysis
+      return that.getLowestOfferListingsByASIN(analyzedItemsList, delayIndex).then(function(lowestOfferListings) {
         let secondaryAnalysisList = [];
         lowestOfferListings.forEach(function (lowestOfferInfo) {
           let matchedPairedProduct = pairedProducts.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
           matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
           secondaryAnalysisList.push(matchedPairedProduct);
         })
-        debugger;
+        return secondaryAnalysisList;        
       })
-    })
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty list.
+      return [];
+    });
   }
 
   /*
