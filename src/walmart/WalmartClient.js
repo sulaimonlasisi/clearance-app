@@ -113,7 +113,7 @@ class WalmartClient {
       //return a list of itemIds returned from all the special feeds
       return items.map(item => item.itemId);
     }).then(function(itemIdsList) {
-      return that.getProductsByItemId(itemIdsList.slice(0,500)).then(function (realTimeItems) {
+      return that.getProductsByItemId(itemIdsList).then(function (realTimeItems) {
         return new ProductList(realTimeItems);
       })
     }).catch(function(error) {
