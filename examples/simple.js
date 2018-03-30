@@ -13,7 +13,7 @@ function testAmazonProducts() {
     // information for items that have it. Returns item with no lowest offer info as well
     */
     amazonClient.getPairedProducts(walmartProducts.products).then(function(pairedProductsWithOfferInfo) {
-      debugger;
+      pairedProductsWithOfferInfo.writeToFile('paired_items.txt');
     });
   });
 }
