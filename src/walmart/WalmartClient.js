@@ -90,32 +90,25 @@ class WalmartClient {
   }
 
   getSpecialFeedItems() {
-    let that = this;
     return this._getAllSpecialFeedItems()
     .then(function(inspections) {
       /*
         Get all promises and only check the ones that were fulfilled    
         because some requests usually fail, we don't want to consider them.
       */
+      let isFulfilledCount = inspections.filter(function(s) { return s.isFulfilled(); }).length;
+      console.log(`Walmart SpecialFeeds Promises Requested: ${inspections.length}, Walmart SpecialFeeds Promises Fulfilled: ${isFulfilledCount}`)
       let items = [];  // Saves results of all fulfilled deals
-      inspections.forEach(function(inspection) {       
+      inspections.forEach(function(inspection, index) {       
         if (inspection.isFulfilled()) {
           if (inspection.value().hasOwnProperty('items')) {
+            console.log(`Promise: ${index} count: ${inspection.value().items.length}`)
             items.push(...inspection.value().items);
           }                    
         }
       });
-      /*items returned by special feeds don't have real time attributes. Prices are not current
-       and some items are no longer in stock even though they appear to be in stock in special feeds.
-       The productLookup endpoint returns real time attributes for items
-       and it is called next to ensure all items we are considering are up to date.
-      */
-      //return a list of itemIds returned from all the special feeds
-      return items.map(item => item.itemId);
-    }).then(function(itemIdsList) {
-      return that.getProductsByItemId(itemIdsList).then(function (realTimeItems) {
-        return new ProductList(realTimeItems);
-      })
+
+      return new ProductList(items);
     }).catch(function(error) {
       console.log(error);
       // Something went wrong. Return an empty products list.
@@ -199,16 +192,16 @@ class WalmartClient {
     });
   }
 
-  getProductsByItemId(itemIdsList, delayIndex=0) {
+  getProductsByItemId(itemIdsList) {
     let itemsList = [];
-    return this._batchedWalmartItemRequest(itemIdsList, delayIndex)
+    return this._batchedWalmartItemRequest(itemIdsList)
     .then(function(inspections) {
       inspections.forEach(function(inspection) {
         if (inspection.isFulfilled()) {
           itemsList.push(...inspection.value().items)
         }
       });
-      return itemsList;
+      return new ProductList(itemsList);
     }).catch(function(error) {
       console.log(error);
       // Something went wrong. Return an empty products list.
@@ -256,7 +249,7 @@ class WalmartClient {
     }));
   }
 
-  _batchedWalmartItemRequest(itemIdsList, delayIndex=0) {
+  _batchedWalmartItemRequest(itemIdsList) {
     let promises = [];
     let index = 0;
     let sliceEnd;
