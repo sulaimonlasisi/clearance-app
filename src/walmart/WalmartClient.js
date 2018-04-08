@@ -46,6 +46,10 @@ class WalmartClient {
     }
   }
 
+  getItemByUPC(upcCode) { 
+    return this._get(options, "//www.walmart.com/product/mobile/api/upc/" + upcCode);  
+  }
+
   taxonomy(delayIndex=0) {
     return this._get(`http://api.walmartlabs.com/v1/taxonomy?apiKey=${this.apiKey}`);
   }
@@ -102,7 +106,7 @@ class WalmartClient {
       inspections.forEach(function(inspection, index) {       
         if (inspection.isFulfilled()) {
           if (inspection.value().hasOwnProperty('items')) {
-            console.log(`Promise: ${index} count: ${inspection.value().items.length}`)
+            console.log(`Promise ${index} count: ${inspection.value().items.length}`)
             items.push(...inspection.value().items);
           }                    
         }
@@ -193,6 +197,9 @@ class WalmartClient {
   }
 
   getProductsByItemId(itemIdsList) {
+    /*
+    Get real time walmart item using itemId.
+    */
     let itemsList = [];
     return this._batchedWalmartItemRequest(itemIdsList)
     .then(function(inspections) {
@@ -248,7 +255,9 @@ class WalmartClient {
       return promise.reflect();
     }));
   }
+  
 
+  //Batches ItemId request. Takes up to 20 item Ids at a time
   _batchedWalmartItemRequest(itemIdsList) {
     let promises = [];
     let index = 0;

@@ -2,7 +2,6 @@ const Promise = require('bluebird');
 const mwsProd = require('mws-product');
 const ProductList = require('./AmazonProductList');
 const PairedProductList = require('./../PairedProductList');
-const AnalysisClient = require('../analysis/AnalysisClient');
 
 /* Class for handling operations with Amazon's inventory */
 class AmazonClient {
@@ -21,7 +20,6 @@ class AmazonClient {
     this.sellerId  = process.env.AMAZON_SELLER_ID;
     this.app = mwsProd({auth: {sellerId: this.sellerId, accessKeyId: this.accessKey, secretKey: this.secretKey}, marketplace: 'US'});
     this.delayTime = 1200; // 1.2s delay. Restore rates we are dealing with are per second
-    this.analysisClient = new AnalysisClient();
   }
 
   /*
@@ -31,7 +29,6 @@ class AmazonClient {
   */
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
-    let that = this;
     return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
     .then(function(amazonProducts) {
       amazonProducts.products.forEach(function(amazonProduct) {
@@ -53,7 +50,7 @@ class AmazonClient {
   */
   getProductsById(productIds, idType='UPC') {
     // Amazon API has throttling and allows 20 max requests
-    //then it throttles at 5 items requested per second
+    //then it throttles at 5 items per second
     // Need to implement a delay mechanism to handle bulk operations.
     let productList = new ProductList([]);
     return this._batchedProductsRequest(productIds, idType)
@@ -76,11 +73,12 @@ class AmazonClient {
   }
   
   /*
-    Gets lowest offer information for each item and returns all that 
+    Gets lowest offer information for each real time Walmart item 
   */
-  getLowestOfferListingsByASIN(realTimeItemsList, asinList) {
+  getLowestOfferListingsByASIN(pairedProducts) {
     let lowestOfferListings = [];
-    let lowestOfferPairedProducts = new PairedProductList();
+    //get the ASINList from the pairedProducts list
+    let asinList = pairedProducts.products.map(item => item.amazonProd.ASIN);
     return this._batchedLowestOfferListingsRequest(asinList)
     .then(function(inspections) {
       let isFulfilledCount = inspections.filter(function(s) { return s.isFulfilled(); }).length;
@@ -95,8 +93,10 @@ class AmazonClient {
         }
       });      
       //filter listing information to match pairedProducts to be used going forward
+      //it is possible that Amazon responses may not include all items in paired products or some promises failed
+      let lowestOfferPairedProducts = new PairedProductList();
       lowestOfferListings.forEach(function (lowestOfferInfo) {
-        let matchedPairedProduct = realTimeItemsList.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
+        let matchedPairedProduct = pairedProducts.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
         matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
         lowestOfferPairedProducts.addPairedProduct(matchedPairedProduct.amazonProd, matchedPairedProduct.walmartProd);
       })

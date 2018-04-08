@@ -32,15 +32,10 @@ function testAmazonProducts() {
       realTimeItemsList.products.forEach(function(realTimeWalmartProduct) {
         realTimePairedProducts.addPairedProduct(idListAndPairedProdListObj.pairedProducts.products.find(item => item.walmartProd.upc == realTimeWalmartProduct.upc).amazonProd, realTimeWalmartProduct);
       });          
-      //get the lowest offer price for each product from amazon or return current price
-      let itemsASINList = realTimePairedProducts.products.map(item => item.amazonProd.ASIN);
-      return {
-        asinList: itemsASINList,
-        pairedProducts: realTimePairedProducts
-      };
+      return realTimePairedProducts;
     })
-  }).then(function (asinListAndPairedProdListObj) {
-    amazonClient.getLowestOfferListingsByASIN(asinListAndPairedProdListObj.pairedProducts, asinListAndPairedProdListObj.asinList).then(function(lowestOfferPairedProducts) {
+  }).then(function (pairedProducts) {
+    amazonClient.getLowestOfferListingsByASIN(pairedProducts).then(function(lowestOfferPairedProducts) {
       console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
       lowestOfferPairedProducts.writeToFile('paired_items.txt');
     })        
