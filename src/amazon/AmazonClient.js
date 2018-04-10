@@ -38,7 +38,7 @@ class AmazonClient {
     }).catch(function(error) {
       console.log(error);
       // Something went wrong. Return an empty PairedProductsList object.
-      return new ProductList([]);
+      return new PairedProductList();
     });
   }
 
