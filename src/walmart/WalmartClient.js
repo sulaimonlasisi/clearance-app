@@ -262,7 +262,7 @@ class WalmartClient {
     let promises = [];
     let index = 0;
     let sliceEnd;
-    let incrementValue=20;
+    const incrementValue=20;
     do {
       sliceEnd = sliceEnd > itemIdsList.length ? itemIdsList.length : index + incrementValue;
       promises.push(this._getItemByItemId(itemIdsList.slice(index, sliceEnd), index/incrementValue));

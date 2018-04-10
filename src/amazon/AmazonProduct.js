@@ -21,7 +21,7 @@ class AmazonProduct {
     this.ASIN = product.Identifiers.MarketplaceASIN.ASIN;
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN';
-    this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'],
+    this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
     this.lowestOfferInfo = {};
   }
 

@@ -25,7 +25,7 @@ class AmazonClient {
   /*
     Optional wrapper function around getProductsById. Use this function for returning an array
     of amazon products along with their correlating walmart products.
-    Return: [{amazonProd: AmazonProduct, walmartProd: WalmartProduct}]
+    Return: PairedProducts object
   */
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
@@ -37,8 +37,8 @@ class AmazonClient {
       return pairedProducts;
     }).catch(function(error) {
       console.log(error);
-      // Something went wrong. Return an empty list.
-      return [];
+      // Something went wrong. Return an empty PairedProductsList object.
+      return new ProductList([]);
     });
   }
 
@@ -119,7 +119,7 @@ class AmazonClient {
     let promises = [];
     let index=0;
     let sliceEnd;
-    let incrementValue=5;
+    const incrementValue=5;
     do {
       sliceEnd = sliceEnd > productIds.length ? productIds.length : index + incrementValue;
       promises.push(this._getProductsById(productIds.slice(index, sliceEnd), idType, index/incrementValue));
@@ -137,12 +137,10 @@ class AmazonClient {
     let promises = [];
     let index=0;
     let sliceEnd;
-    let incrementValue=10;
-    let itemCondition = 'New';
-    let excludeMe = true;
+    const incrementValue=10;
     do {
       sliceEnd = sliceEnd > asinList.length ? asinList.length : index + incrementValue;
-      promises.push(this._getLowestOfferListingsByASIN(asinList.slice(index, sliceEnd), itemCondition, excludeMe, index/incrementValue));
+      promises.push(this._getLowestOfferListingsByASIN(asinList.slice(index, sliceEnd), index/incrementValue));
       index+=incrementValue;
     } while (index < asinList.length);
     return Promise.all(promises.map(function(promise) {
@@ -165,8 +163,10 @@ class AmazonClient {
   /*
     Make a request to Amazon to retrieve the lowest offer listings for 1-10 products by their ASIN.
   */
-  _getLowestOfferListingsByASIN(asinList, itemCondition, excludeMe, delayIndex=0) {
+  _getLowestOfferListingsByASIN(asinList, delayIndex=0) {
     const that = this; 
+    const itemCondition = 'New';
+    const excludeMe = true;
     return Promise.delay(delayIndex*this.delayTime).then(function() {
       return new Promise(function (resolve, reject) {
         that.app.lowestOfferListingsForASIN({asinList: asinList, itemCondition: itemCondition, excludeMe: excludeMe}, function(err, jsonResponse) {
