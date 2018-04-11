@@ -37,12 +37,18 @@ class AnalysisClient {
   }
 
   _getBasicROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmart = +this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
-    let totalCostPerItem = (totalPaidToWalmart + amazonFBACost);
-    let dollarROIPerItem = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItem).toFixed(2);    
+    /*
+      to determine when to do comparison with amazonPrice or lowestOfferPrice
+      when doing Simple Cost analysis, the lowestOffer obj will be empty, so it will use amazon price
+      when doing secondary analysis, items with lowest offer will use lowestOffer price, other items will use amazonPrice
+    */
+    const amazonPrice = (Object.keys(pairedProduct.amazonProd.lowestOfferInfo).length === 0) ? pairedProduct.amazonProd.price : pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount ;
+    const totalPaidToWalmart = +this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
+    const totalCostPerItem = (totalPaidToWalmart + amazonFBACost);
+    const dollarROIPerItem = +(parseFloat(amazonPrice) - totalCostPerItem).toFixed(2);    
     return {
       basicTotalCostPerItem: (totalPaidToWalmart + amazonFBACost),
-      basicDollarROIPerItem: +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItem).toFixed(2),
+      basicDollarROIPerItem: +(parseFloat(amazonPrice) - totalCostPerItem).toFixed(2),
       basicPercentROIPerItem: Math.round(parseFloat(dollarROIPerItem / (totalCostPerItem)) * 100)
     }
   }
@@ -55,21 +61,27 @@ class AnalysisClient {
     although I have seen deals for >=3% consistently.
   */
   _getGCGROIData(pairedProduct, amazonFBACost){
-    let totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
-    let totalCostPerItemWithGCG = (totalPaidToWalmartWithGCG + amazonFBACost);
-    let dollarROIPerItemWithGCG = +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItemWithGCG).toFixed(2);
+    /*
+      to determine when to do comparison with amazonPrice or lowestOfferPrice
+      when doing Simple Cost analysis, the lowestOffer obj will be empty, so it will use amazon price
+      when doing secondary analysis, items with lowest offer will use lowestOffer price, other items will use amazonPrice
+    */
+    const amazonPrice = (Object.keys(pairedProduct.amazonProd.lowestOfferInfo).length === 0) ? pairedProduct.amazonProd.price : pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount ;
+    const totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
+    const totalCostPerItemWithGCG = (totalPaidToWalmartWithGCG + amazonFBACost);
+    const dollarROIPerItemWithGCG = +(parseFloat(amazonPrice) - totalCostPerItemWithGCG).toFixed(2);
     return {
       gCGTotalCostPerItem: (totalPaidToWalmartWithGCG + amazonFBACost),
-      gCGDollarROIPerItem: +(parseFloat(pairedProduct.amazonProd.price) - totalCostPerItemWithGCG).toFixed(2),
+      gCGDollarROIPerItem: +(parseFloat(amazonPrice) - totalCostPerItemWithGCG).toFixed(2),
       gCGPercentROIPerItem: Math.round(parseFloat(dollarROIPerItemWithGCG / (totalCostPerItemWithGCG)) * 100)
     }
   }
 
   _getAnalyzedProductInfo(pairedProduct){
-    let amazonFBACost = +this._getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
-    let gCGROIData = this._getGCGROIData(pairedProduct, amazonFBACost);
-    let basicROIData = this._getBasicROIData(pairedProduct, amazonFBACost);
-    let analyzedProductInfo =  {
+    const amazonFBACost = +this._getApproxAmazonFBACost(pairedProduct.amazonProd).toFixed(2);
+    const gCGROIData = this._getGCGROIData(pairedProduct, amazonFBACost);
+    const basicROIData = this._getBasicROIData(pairedProduct, amazonFBACost);
+    const analyzedProductInfo =  {
       baseTotalPaid: basicROIData.basicTotalCostPerItem,
       baseDollarROI: basicROIData.basicDollarROIPerItem,
       basePercentROI: basicROIData.basicPercentROIPerItem,
@@ -206,6 +218,32 @@ class AnalysisClient {
     //write all data into separate file for each category
     //this._writeAllCategories(categorizedItems);
     */
+    return profitablePairedProducts;
+  }
+
+
+  /*
+    Does profitability analysis of item based on lowest price offered
+    Input_params: PairedProductsList object of potentially profitable items
+    Returns: PairedProductsList object of profitable items.
+  */
+  getSecondaryAnalysis(pairedProductsList) {
+    /*
+      for each product, compare its total cost with the lowest offer price
+      if its price gives us ROI >= threshold_ROI%, we can include it in the to-buy list
+      At this point, we are taking minimal risk. It is possible to still buy and sell
+      quickly if our ROI < 25% but we can look into that after we establish profitability
+      with this cautious approach     
+    */
+    let that = this;
+    let analyzedProduct;
+    let profitablePairedProducts = new PairedProductList();       
+    pairedProductsList.products.forEach(function(pairedProduct){
+      analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
+      if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
+        profitablePairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
+      } 
+    });
     return profitablePairedProducts;
   }
 }
