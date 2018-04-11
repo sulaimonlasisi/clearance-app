@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const PairedProductList = require('./../PairedProductList');
 
 /* Class for handling product profitability analysis */
 class AnalysisClient {
@@ -77,7 +78,9 @@ class AnalysisClient {
       gCGPercentROI: gCGROIData.gCGPercentROIPerItem,
       upc: pairedProduct.amazonProd.upc,
       category: pairedProduct.amazonProd.category,
-      isWeightComputed: pairedProduct.amazonProd.dimensions.weightComputed
+      isWeightComputed: pairedProduct.amazonProd.dimensions.weightComputed,
+      ASIN: pairedProduct.amazonProd.ASIN,
+      UPC: pairedProduct.amazonProd.upc
     }
     return analyzedProductInfo;
   }
@@ -175,6 +178,7 @@ class AnalysisClient {
     //this helps to compute their shipping price and see what is the profit potential for such items.
     let representativeWeights = that._assignRepresentativeWeightToItem(pairedProductsList);
     let analyzedProduct;
+    let profitablePairedProducts = new PairedProductList();
        
     pairedProductsList.products.forEach(function(pairedProduct){
       //if weight unknown, if we have computed_weight for category, assign it and set_flag 
@@ -190,14 +194,19 @@ class AnalysisClient {
         analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
       }
       if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
-        that.analyzedProductsInfo.push(analyzedProduct);
+        profitablePairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
+        //that.analyzedProductsInfo.push(analyzedProduct); -- not used here might be needed when writing stuff
       } 
     });
 
+
+    /* currently not used. Will be used after secondary analysis
     let categorizedItems = this._filterProductsToCategories();
     
     //write all data into separate file for each category
-    this._writeAllCategories(categorizedItems);
+    //this._writeAllCategories(categorizedItems);
+    */
+    return profitablePairedProducts;
   }
 }
 

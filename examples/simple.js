@@ -1,22 +1,49 @@
 const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
 const AnalysisClient = require('../src/analysis/AnalysisClient');
+const PairedProductList = require('../src/PairedProductList');
 
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
   let analysisClient = new AnalysisClient();
-  walmart.client.getSpecialFeedItems()
-  .then(function(walmartProducts) {
-    // For each walmart product, retrieve the correlating amazon product.
-    // Walmart UPCs that are associated with zero or more than one Amazon product will be omitted.
-    amazonClient.getPairedProducts(walmartProducts.products)
-    .then(function(pairedProducts) {
-      //analyze profitability of all items and write relevant info to a file
-      analysisClient.getSimpleCostAnalysis(pairedProducts);
-      //pairedProducts.writeToFile('paired_items.txt');
-    });
-  });
+  walmart.client.getSpecialFeedItems().then(function(walmartProducts) {
+    return walmartProducts;
+  }).then(function (walmartProducts) {
+    console.log(`Returned Walmart Products Count After Filtering UPC and Availability: ${walmartProducts.products.length}`)
+    return amazonClient.getPairedProducts(walmartProducts.products);
+  }).then(function (pairedProducts) {
+    console.log(`Returned Amazon ProductsById Count: ${pairedProducts.products.length}`);
+    //simple cost analysis eliminates items with lower than intended %ROI from further AMZN/WLMRT calls
+    let profitablePairedProductsList = analysisClient.getSimpleCostAnalysis(pairedProducts);
+    console.log(`Returned Products Count After Simple Cost Analysis: ${profitablePairedProductsList.products.length}`);
+    //A lot of items have been filtered out, we can get real-time price from WLMRT for remaining
+    let itemsIdList = profitablePairedProductsList.products.map(item => item.walmartProd.itemId);
+    return {
+      idList: itemsIdList,
+      pairedProducts: profitablePairedProductsList
+    };
+  }).then(function (idListAndPairedProdListObj) {
+    return walmart.client.getProductsByItemId(idListAndPairedProdListObj.idList).then(function (realTimeItemsList) {
+      console.log(`Returned Products Count After Walmart Product Lookup: ${realTimeItemsList.products.length}`);
+      //Update pairedProducts to only include items returned from Walmart Product Lookup
+      //It is possible an item that was in PairedProducts before is no longer returned by walmart 
+      //because current availability is not in stock even though special feeds said it was available
+      let realTimePairedProducts = new PairedProductList();
+      realTimeItemsList.products.forEach(function(realTimeWalmartProduct) {
+        realTimePairedProducts.addPairedProduct(idListAndPairedProdListObj.pairedProducts.products.find(item => item.walmartProd.upc == realTimeWalmartProduct.upc).amazonProd, realTimeWalmartProduct);
+      });          
+      return realTimePairedProducts;
+    })
+  }).then(function (pairedProducts) {
+    amazonClient.getLowestOfferListingsByASIN(pairedProducts).then(function(lowestOfferPairedProducts) {
+      console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
+      lowestOfferPairedProducts.writeToFile('paired_items.txt');
+    })        
+  })
 }
+
+
+
 
 function getRecursiveResponse(response, idx){
   let resultsArray;

@@ -1,5 +1,12 @@
 const salesRankings = require('./sales_rankings');
 
+//custom minimum price function
+Array.prototype.hasMin = function(attrib) {
+  return this.reduce(function(prev, curr){ 
+    return parseInt(prev[attrib]['LandedPrice']['Amount']) < parseInt(curr[attrib]['LandedPrice']['Amount']) ? prev : curr; 
+  });
+}
+
 /* Class representing a store item */
 class AmazonProduct {
 
@@ -15,6 +22,7 @@ class AmazonProduct {
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN';
     this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
+    this.lowestOfferInfo = {};
   }
 
   // Returns a string of the basic product information.
@@ -28,8 +36,18 @@ class AmazonProduct {
     return this._hasKnownPrice() && this._isPopular();
   }
 
-  // Private methods
 
+  // Sets the lowest offer info property or leaves it as-is.
+  setLowestOfferInformation(lowestOfferInfo) {
+    if (Array.isArray(lowestOfferInfo.Product.LowestOfferListings.LowestOfferListing)) {
+      this.lowestOfferInfo = { asin: lowestOfferInfo.Product.Identifiers.MarketplaceASIN.ASIN,
+        lowestOfferInfo: lowestOfferInfo.Product.LowestOfferListings.LowestOfferListing.hasMin('Price')
+      }
+    }
+  }
+
+  // Private methods
+ 
   /* Determine if this amazon product will sell well based on the sales rank. */
   _isPopular() {
     if (this.bestSalesRanking.rank !== 'UNKNOWN') {

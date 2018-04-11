@@ -15,9 +15,8 @@ class WalmartProductList {
   // Create a list of walmart products that all have a UPC code.
   productsList(productsJSON) {
     let products = [];
-
     productsJSON.forEach(function(product) {
-      if (product.hasOwnProperty('upc') && product.availableOnline) {
+      if (product.hasOwnProperty('upc') && product.availableOnline && product.stock.toLowerCase() === 'available') {
         products.push(new WalmartProduct(product));
       }
     });

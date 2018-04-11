@@ -19,23 +19,26 @@ class AmazonClient {
     this.secretKey = process.env.AMAZON_SECRET_KEY;
     this.sellerId  = process.env.AMAZON_SELLER_ID;
     this.app = mwsProd({auth: {sellerId: this.sellerId, accessKeyId: this.accessKey, secretKey: this.secretKey}, marketplace: 'US'});
-    this.delayTime = 500; // 500ms delay. Can increase this if needed.
+    this.delayTime = 1200; // 1.2s delay. Restore rates we are dealing with are per second
   }
 
   /*
     Optional wrapper function around getProductsById. Use this function for returning an array
     of amazon products along with their correlating walmart products.
-    Return: [{amazonProd: AmazonProduct, walmartProd: WalmartProduct}]
+    Return: PairedProducts object
   */
   getPairedProducts(walmartProducts, idType='UPC', delayIndex=0) {
     let pairedProducts = new PairedProductList();
-
     return this.getProductsById(walmartProducts.map(item => item.upc), idType, delayIndex)
     .then(function(amazonProducts) {
       amazonProducts.products.forEach(function(amazonProduct) {
         pairedProducts.addPairedProduct(amazonProduct, walmartProducts.find(item => item.upc == amazonProduct.upc));
       });
       return pairedProducts;
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty PairedProductsList object.
+      return new PairedProductList();
     });
   }
 
@@ -45,13 +48,15 @@ class AmazonClient {
     idType     - The type of product ID to lookup by. The following ID types are supported:
                  ASIN, GCID, SellerSKU, UPC, EAN, ISBN, and JAN.
   */
-  getProductsById(productIds, idType='UPC', delayIndex=0) {
-    // Amazon API has throttling and allows 20 requests every 5 seconds = 18,000 requests/hour.
+  getProductsById(productIds, idType='UPC') {
+    // Amazon API has throttling and allows 20 max requests
+    //then it throttles at 5 items per second
     // Need to implement a delay mechanism to handle bulk operations.
     let productList = new ProductList([]);
-
     return this._batchedProductsRequest(productIds, idType)
     .then(function(inspections) {
+      let isFulfilledCount = inspections.filter(function(s) { return s.isFulfilled(); }).length;
+      console.log(`Amazon getProductsById Promises Requested: ${inspections.length}, Amazon getProductsById Promises Fulfilled: ${isFulfilledCount}`)
       inspections.forEach(function(inspection) {
         if (inspection.isFulfilled()) {
           if (inspection.value().hasOwnProperty('GetMatchingProductForIdResponse')) {
@@ -59,12 +64,47 @@ class AmazonClient {
           }
         }
       });
-
       return productList;
     }).catch(function(error) {
       console.log(error);
       // Something went wrong. Return an empty products list.
       return new ProductList([]);
+    });
+  }
+  
+  /*
+    Gets lowest offer information for each real time Walmart item 
+  */
+  getLowestOfferListingsByASIN(pairedProducts) {
+    let lowestOfferListings = [];
+    //get the ASINList from the pairedProducts list
+    let asinList = pairedProducts.products.map(item => item.amazonProd.ASIN);
+    return this._batchedLowestOfferListingsRequest(asinList)
+    .then(function(inspections) {
+      let isFulfilledCount = inspections.filter(function(s) { return s.isFulfilled(); }).length;
+      console.log(`LowestOfferListings Promises Requested: ${inspections.length}, LowestOfferListings Promises Fulfilled: ${isFulfilledCount}`)
+      inspections.forEach(function(inspection) {
+        if (inspection.isFulfilled()) {
+          if (inspection.value().hasOwnProperty('GetLowestOfferListingsForASINResponse')) {
+            inspection.value().GetLowestOfferListingsForASINResponse.GetLowestOfferListingsForASINResult.forEach(function(lowestOfferInfo){
+              lowestOfferListings.push(lowestOfferInfo)
+            })
+          }
+        }
+      });      
+      //filter listing information to match pairedProducts to be used going forward
+      //it is possible that Amazon responses may not include all items in paired products or some promises failed
+      let lowestOfferPairedProducts = new PairedProductList();
+      lowestOfferListings.forEach(function (lowestOfferInfo) {
+        let matchedPairedProduct = pairedProducts.products.find(matchedProduct => matchedProduct.amazonProd.ASIN == lowestOfferInfo.A$.ASIN);
+        matchedPairedProduct.amazonProd.setLowestOfferInformation(lowestOfferInfo);
+        lowestOfferPairedProducts.addPairedProduct(matchedPairedProduct.amazonProd, matchedPairedProduct.walmartProd);
+      })
+      return lowestOfferPairedProducts;
+    }).catch(function(error) {
+      console.log(error);
+      // Something went wrong. Return an empty list.
+      return new PairedProductList();
     });
   }
 
@@ -75,17 +115,34 @@ class AmazonClient {
     This is necessary because Amazon's API allows a maximum of 5 items to be looked up at at time.
     For details, refer to idList param at http://docs.developer.amazonservices.com/en_US/products/Products_GetMatchingProductForId.html 
   */
-  _batchedProductsRequest(productIds, idType, delayIndex=0) {
+  _batchedProductsRequest(productIds, idType) {
     let promises = [];
     let index=0;
     let sliceEnd;
-
+    const incrementValue=5;
     do {
-      sliceEnd = sliceEnd > productIds.length ? productIds.length : index + 5;
-      promises.push(this._getProductsById(productIds.slice(index, sliceEnd), idType, index/5));
-      index+=5;
+      sliceEnd = sliceEnd > productIds.length ? productIds.length : index + incrementValue;
+      promises.push(this._getProductsById(productIds.slice(index, sliceEnd), idType, index/incrementValue));
+      index+=incrementValue;
     } while (index < productIds.length);
+    return Promise.all(promises.map(function(promise) {
+      return promise.reflect();
+    }));
+  }
 
+   /*
+    Batches lowest offer requests
+   */
+  _batchedLowestOfferListingsRequest(asinList) {
+    let promises = [];
+    let index=0;
+    let sliceEnd;
+    const incrementValue=10;
+    do {
+      sliceEnd = sliceEnd > asinList.length ? asinList.length : index + incrementValue;
+      promises.push(this._getLowestOfferListingsByASIN(asinList.slice(index, sliceEnd), index/incrementValue));
+      index+=incrementValue;
+    } while (index < asinList.length);
     return Promise.all(promises.map(function(promise) {
       return promise.reflect();
     }));
@@ -94,10 +151,25 @@ class AmazonClient {
   /* Make a request to Amazon to retrieve 1-5 products by their Ids. */
   _getProductsById(productIds, idType, delayIndex=0) {
     const that = this; // 'this' becomes undefined inside promise so store reference.
-
     return Promise.delay(delayIndex*this.delayTime).then(function() {
       return new Promise(function (resolve, reject) {
         that.app.matchingProductForId({idType: idType, idList: productIds}, function(err, jsonResponse) {
+          !err ? resolve(jsonResponse) : reject(err);
+        });
+      });
+    });
+  }
+
+  /*
+    Make a request to Amazon to retrieve the lowest offer listings for 1-10 products by their ASIN.
+  */
+  _getLowestOfferListingsByASIN(asinList, delayIndex=0) {
+    const that = this; 
+    const itemCondition = 'New';
+    const excludeMe = true;
+    return Promise.delay(delayIndex*this.delayTime).then(function() {
+      return new Promise(function (resolve, reject) {
+        that.app.lowestOfferListingsForASIN({asinList: asinList, itemCondition: itemCondition, excludeMe: excludeMe}, function(err, jsonResponse) {
           !err ? resolve(jsonResponse) : reject(err);
         });
       });
