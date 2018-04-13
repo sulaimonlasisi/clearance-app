@@ -22,7 +22,7 @@ class AmazonProduct {
     this.bestSalesRanking = this._getBestSalesRanking(product.SalesRankings);
     this.upc = UPC ? UPC : 'UNKNOWN';
     this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
-    this.lowestOfferInfo = {};
+    this.lowestOfferInfo = null;
   }
 
   // Returns a string of the basic product information.

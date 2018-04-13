@@ -25,7 +25,7 @@ class AnalysisClient {
 
   //returns the total amount paid to walmart when item is purchased
   _getTotalAmountPaidToWalmart(walmartProduct) {
-    return (parseFloat(walmartProduct.price) + parseFloat(walmartProduct.shippingCost) + (this.approxTaxRate*parseFloat(walmartProduct.price)));
+    return parseFloat(((parseFloat(walmartProduct.price) + parseFloat(walmartProduct.shippingCost) + (this.approxTaxRate*parseFloat(walmartProduct.price)))).toFixed(2));
   }
   
   //returns approx cost of shipping to AMZN as an FBA user which 
@@ -42,13 +42,13 @@ class AnalysisClient {
       when doing Simple Cost analysis, the lowestOffer obj will be empty, so it will use amazon price
       when doing secondary analysis, items with lowest offer will use lowestOffer price, other items will use amazonPrice
     */
-    const amazonPrice = (Object.keys(pairedProduct.amazonProd.lowestOfferInfo).length === 0) ? pairedProduct.amazonProd.price : pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount ;
-    const totalPaidToWalmart = +this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2);
+    const amazonPrice = parseFloat(pairedProduct.amazonProd.lowestOfferInfo ? pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount : pairedProduct.amazonProd.price);
+    const totalPaidToWalmart = this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd);
     const totalCostPerItem = (totalPaidToWalmart + amazonFBACost);
-    const dollarROIPerItem = +(parseFloat(amazonPrice) - totalCostPerItem).toFixed(2);    
+    const dollarROIPerItem = (amazonPrice - totalCostPerItem).toFixed(2);    
     return {
-      basicTotalCostPerItem: (totalPaidToWalmart + amazonFBACost),
-      basicDollarROIPerItem: +(parseFloat(amazonPrice) - totalCostPerItem).toFixed(2),
+      basicTotalCostPerItem: totalCostPerItem,
+      basicDollarROIPerItem: dollarROIPerItem,
       basicPercentROIPerItem: Math.round(parseFloat(dollarROIPerItem / (totalCostPerItem)) * 100)
     }
   }
@@ -66,13 +66,13 @@ class AnalysisClient {
       when doing Simple Cost analysis, the lowestOffer obj will be empty, so it will use amazon price
       when doing secondary analysis, items with lowest offer will use lowestOffer price, other items will use amazonPrice
     */
-    const amazonPrice = (Object.keys(pairedProduct.amazonProd.lowestOfferInfo).length === 0) ? pairedProduct.amazonProd.price : pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount ;
-    const totalPaidToWalmartWithGCG = +(this.effectiveValueOfDollar * (+this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd).toFixed(2))).toFixed(2);
+    const amazonPrice = parseFloat(pairedProduct.amazonProd.lowestOfferInfo ? pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount : pairedProduct.amazonProd.price);
+    const totalPaidToWalmartWithGCG = parseFloat((this.effectiveValueOfDollar * this._getTotalAmountPaidToWalmart(pairedProduct.walmartProd)).toFixed(2));
     const totalCostPerItemWithGCG = (totalPaidToWalmartWithGCG + amazonFBACost);
-    const dollarROIPerItemWithGCG = +(parseFloat(amazonPrice) - totalCostPerItemWithGCG).toFixed(2);
+    const dollarROIPerItemWithGCG = (amazonPrice - totalCostPerItemWithGCG).toFixed(2);
     return {
-      gCGTotalCostPerItem: (totalPaidToWalmartWithGCG + amazonFBACost),
-      gCGDollarROIPerItem: +(parseFloat(amazonPrice) - totalCostPerItemWithGCG).toFixed(2),
+      gCGTotalCostPerItem: totalCostPerItemWithGCG,
+      gCGDollarROIPerItem: dollarROIPerItemWithGCG,
       gCGPercentROIPerItem: Math.round(parseFloat(dollarROIPerItemWithGCG / (totalCostPerItemWithGCG)) * 100)
     }
   }
@@ -239,8 +239,7 @@ class AnalysisClient {
     let analyzedProduct;
     let profitablePairedProducts = new PairedProductList();       
     pairedProductsList.products.forEach(function(pairedProduct){
-      analyzedProduct = that._getAnalyzedProductInfo(pairedProduct);
-      if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
+      if (that._getAnalyzedProductInfo(pairedProduct).basePercentROI >= that.ROIThreshold) {
         profitablePairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
       } 
     });
