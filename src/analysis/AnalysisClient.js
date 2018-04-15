@@ -236,7 +236,6 @@ class AnalysisClient {
       with this cautious approach     
     */
     let that = this;
-    let analyzedProduct;
     let profitablePairedProducts = new PairedProductList();       
     pairedProductsList.products.forEach(function(pairedProduct){
       if (that._getAnalyzedProductInfo(pairedProduct).basePercentROI >= that.ROIThreshold) {
