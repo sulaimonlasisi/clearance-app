@@ -37,7 +37,11 @@ function testAmazonProducts() {
   }).then(function (pairedProducts) {
     amazonClient.getLowestOfferListingsByASIN(pairedProducts).then(function(lowestOfferPairedProducts) {
       console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
-      lowestOfferPairedProducts.writeToFile('paired_items.txt');
+      
+      //secondary cost analysis eliminates items with lower than intended %ROI from list
+      let profitablePairedProductsList = analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);
+      console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
+      profitablePairedProductsList.writeToFile('paired_items.txt');
     })        
   })
 }
