@@ -2,6 +2,7 @@ const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
 const AnalysisClient = require('../src/analysis/AnalysisClient');
 const PairedProductList = require('../src/PairedProductList');
+const RatingsClient = require('../src/ratings/RatingsClient');
 
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
@@ -37,11 +38,13 @@ function testAmazonProducts() {
   }).then(function (pairedProducts) {
     amazonClient.getLowestOfferListingsByASIN(pairedProducts).then(function(lowestOfferPairedProducts) {
       console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
-      
       //secondary cost analysis eliminates items with lower than intended %ROI from list
-      let profitablePairedProductsList = analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);
+      return analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);      
+    }).then(async function (profitablePairedProductsList){
+      let ratingsClient = new RatingsClient();
       console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
-      profitablePairedProductsList.writeToFile('paired_items.txt');
+      let items = await ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList);
+      //profitablePairedProductsList.writeToFile('paired_items.txt');
     })        
   })
 }

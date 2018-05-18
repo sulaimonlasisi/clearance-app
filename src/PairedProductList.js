@@ -23,7 +23,7 @@ class PairedProductList {
     paired_items_file.on('error', function(err) { console.log(err) });
     this.products.forEach(function(pairedProduct) {
       const amazonPrice = pairedProduct.amazonProd.lowestOfferInfo ? pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount : pairedProduct.amazonProd.price;
-      textLine = `AMAZON NAME: ${pairedProduct.amazonProd.name}, AMAZON PRICE: ${amazonPrice}, ` + 
+      textLine = `AMAZON NAME: ${pairedProduct.amazonProd.name}, ASIN: ${pairedProduct.amazonProd.ASIN}, AMAZON PRICE: ${amazonPrice}, ` + 
         `WALMART NAME: ${pairedProduct.walmartProd.name}, WALMART PRICE: ${pairedProduct.walmartProd.price}` + "\r\n";
       paired_items_file.write(textLine);
     });
