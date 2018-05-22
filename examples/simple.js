@@ -43,8 +43,11 @@ function testAmazonProducts() {
     }).then(async function (profitablePairedProductsList){
       let ratingsClient = new RatingsClient();
       console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
-      let items = await ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList);
-      //profitablePairedProductsList.writeToFile('paired_items.txt');
+      let reviewedPairedProductsList = ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList);
+      debugger;
+      let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(reviewedPairedProductsList);
+      debugger;
+      preferredAndPopularPairedProductsList.writeToFile('paired_items.txt');
     })        
   })
 }

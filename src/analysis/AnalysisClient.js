@@ -13,7 +13,9 @@ class AnalysisClient {
       approxTaxRate - accounts for tax on item when purchasing from walmart
       effectiveValueOfOurDollar - because of sites like giftcardgranny.com and eBay, for every dollar we spend
       at walmart, we could actually be spending less e.g. 98 cents.
-      ROIThreshold - the cutoff ROI for items we want to consider buying
+      ROIThreshold - the cutoff ROI for items the item being considered
+      minRatingsValue - minimum average rating of the item being considered
+      minReviewsCount - minimum number of reviews of the item being considered
   */
   constructor() {
     this.fbaShippingCostPerPound = 0.50; 
@@ -21,6 +23,8 @@ class AnalysisClient {
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
     this.ROIThreshold = 25;
+    this.minRatingsValue = 3.0;
+    this.minReviewsCount = 30;
   }
 
   //returns the total amount paid to walmart when item is purchased
@@ -243,6 +247,26 @@ class AnalysisClient {
       } 
     });
     return profitablePairedProducts;
+  }
+
+
+  /*
+    Does ratings and reviews analysis by only keeping items that have a 
+    rating of >= 3.0 and a review count of >= 30.
+    Input_params: PairedProductsList object of potentially profitable items
+    Returns: PairedProductsList object of profitable items.
+  */
+  getPreferredAndPopularItems(pairedProductsList) {
+    let that = this;
+    let preferredAndPopularPairedProducts = new PairedProductList();
+    debugger;       
+    pairedProductsList.products.forEach(function(pairedProduct){
+      if ((pairedProduct.amazonProd.itemRating >= that.minRatingsValue) && (pairedProduct.amazonProd.itemNumReviews >= that.minReviewsCount)) {
+        preferredAndPopularPairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
+      } 
+    });
+    debugger;
+    return preferredAndPopularPairedProducts;
   }
 }
 

@@ -23,11 +23,16 @@ class RatingsClient {
   */
   async getAllItemsRatingsAndReviews(pairedProductList){
     let productsRatingsList = [];
-    pairedProductList.products.forEach((product, delayIndex)=>{
-      productsRatingsList.push(this.getSingleItemRatingAndReview(product, delayIndex*this.delayTime)); 
-    })
-    let results = await Promise.all(productsRatingsList);
-    return results;
+    try {
+      pairedProductList.products.forEach(async (product, delayIndex)=>{        
+        productsRatingsList.push(await this.getSingleItemRatingAndReview(product, delayIndex*this.delayTime)); 
+      })
+      debugger;
+      return await Promise.all(productsRatingsList);
+    }
+    catch(err) {
+      return(err.message);
+    }; 
   }
 
   /*
@@ -43,23 +48,24 @@ class RatingsClient {
   async getSingleItemRatingAndReview(product, time=0){
     try {
       const browser = await puppeteer.launch();
+      timeout(500)
       const page = await browser.newPage();
       let item_link = `${this.base_url}${product.amazonProd.ASIN}`;
       await page.goto(item_link);
+      timeout(500)
       //get rating value
       let rating = await page.evaluate(() => document.querySelector(".a-size-base.a-color-secondary").innerText);
+      timeout(500)
       rating = this.parseRating(rating);
       //get number of reviews value
       let numReviews = await page.evaluate(() => document.querySelector(".a-size-small.a-link-emphasis").innerText);
       numReviews = this.parseNumReviews(numReviews);
       await browser.close();
       product.amazonProd.ratingsAndReviews = {itemRating: rating, itemNumReviews: numReviews};
-      this.timeout(time);
       return(product);
     } catch(err){
-      console.log(err);
-      this.timeout(time);
-      return err;
+      console.log(err.message);
+      return err.message;
     }            
   }
 
