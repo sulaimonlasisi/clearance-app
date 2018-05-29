@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer');
 const Promise = require('bluebird');
+const PairedProductList = require('./../PairedProductList');
+require('events').EventEmitter.defaultMaxListeners = 200;
 
 /* Class that retrieves the ratings and review info for Amazon products
    This uses a hack that stands up a bare-bones chrome page for item ratings and review using
@@ -15,31 +17,45 @@ class RatingsClient {
   */
   constructor() {
     this.base_url = 'https://www.amazon.com/gp/customer-reviews/widgets/average-customer-review/popover/ref=dpx_acr_pop_?contextId=dpx&asin=';
-    this.delayTime = 500; // 500ms delay.
+    this.delayTime = 30000; // 30s delay.
   }
   
   /*
     Function that aggregates calls to get all items' information
   */
   async getAllItemsRatingsAndReviews(pairedProductList){
-    let productsRatingsList = [];
-    try {
-      pairedProductList.products.forEach(async (product, delayIndex)=>{        
-        productsRatingsList.push(await this.getSingleItemRatingAndReview(product, delayIndex*this.delayTime)); 
+    return this.allProdsReturn(pairedProductList).then((allProds) => {
+      return Promise.all(allProds).then((results) => {
+        let allProducts = new PairedProductList();
+        results.forEach((product) => {
+          allProducts.addPairedProduct(product.amazonProd, product.walmartProd);
+        })
+        return allProducts;
       })
-      debugger;
-      return await Promise.all(productsRatingsList);
-    }
-    catch(err) {
-      return(err.message);
-    }; 
+    });
   }
-
-  /*
-    A delay function to pause between puppeteer instantiations
-  */
+  
   timeout(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  allProdsReturn(pairedProductList){
+    return new Promise ((resolve, reject) => {
+      try {
+        let productsRatingsList = [];
+        pairedProductList.products.forEach((product, delayIndex)=>{
+          //this.timeout(delayIndex*this.delayTime);
+          let item = this.getSingleItemRatingAndReview(product, delayIndex*this.delayTime);
+          productsRatingsList.push(item);          
+        })
+        resolve(productsRatingsList);
+      }
+      catch(err){
+        console.log(err);
+        reject(err.toString());
+      } 
+    })
+             
   }
 
   /*
@@ -48,24 +64,25 @@ class RatingsClient {
   async getSingleItemRatingAndReview(product, time=0){
     try {
       const browser = await puppeteer.launch();
-      timeout(500)
       const page = await browser.newPage();
       let item_link = `${this.base_url}${product.amazonProd.ASIN}`;
-      await page.goto(item_link);
-      timeout(500)
+      await page.goto(item_link, {
+                waitUntil: 'networkidle2',
+                timeout: 3000000});
       //get rating value
       let rating = await page.evaluate(() => document.querySelector(".a-size-base.a-color-secondary").innerText);
-      timeout(500)
       rating = this.parseRating(rating);
       //get number of reviews value
       let numReviews = await page.evaluate(() => document.querySelector(".a-size-small.a-link-emphasis").innerText);
       numReviews = this.parseNumReviews(numReviews);
       await browser.close();
       product.amazonProd.ratingsAndReviews = {itemRating: rating, itemNumReviews: numReviews};
+      //this.timeout(time);
       return(product);
     } catch(err){
-      console.log(err.message);
-      return err.message;
+      console.log(err);
+      //this.timeout(time);
+      return err;
     }            
   }
 

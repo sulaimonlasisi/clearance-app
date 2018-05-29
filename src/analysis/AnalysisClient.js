@@ -258,14 +258,12 @@ class AnalysisClient {
   */
   getPreferredAndPopularItems(pairedProductsList) {
     let that = this;
-    let preferredAndPopularPairedProducts = new PairedProductList();
-    debugger;       
+    let preferredAndPopularPairedProducts = new PairedProductList();       
     pairedProductsList.products.forEach(function(pairedProduct){
-      if ((pairedProduct.amazonProd.itemRating >= that.minRatingsValue) && (pairedProduct.amazonProd.itemNumReviews >= that.minReviewsCount)) {
+      if ((pairedProduct.amazonProd.ratingsAndReviews.itemRating >= that.minRatingsValue) && (pairedProduct.amazonProd.ratingsAndReviews.itemNumReviews >= that.minReviewsCount)) {
         preferredAndPopularPairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
       } 
     });
-    debugger;
     return preferredAndPopularPairedProducts;
   }
 }

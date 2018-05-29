@@ -40,14 +40,15 @@ function testAmazonProducts() {
       console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
       //secondary cost analysis eliminates items with lower than intended %ROI from list
       return analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);      
-    }).then(async function (profitablePairedProductsList){
+    }).then(function (profitablePairedProductsList){
       let ratingsClient = new RatingsClient();
       console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
-      let reviewedPairedProductsList = ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList);
-      debugger;
-      let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(reviewedPairedProductsList);
-      debugger;
-      preferredAndPopularPairedProductsList.writeToFile('paired_items.txt');
+      ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList).then((allRev) => {
+        let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(allRev);
+        console.log(`Returned Products Count After Ratings and Review Analysis: ${preferredAndPopularPairedProductsList.products.length}`);
+        preferredAndPopularPairedProductsList.writeToFile('paired_items.txt');
+      })
+      
     })        
   })
 }
