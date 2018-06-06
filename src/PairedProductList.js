@@ -21,13 +21,18 @@ class PairedProductList {
     let textLine;
     let paired_items_file = fs.createWriteStream(fileName);
     paired_items_file.on('error', function(err) { console.log(err) });
+    textLine = `Amazon Name\tASIN\tAmazon UPC\tAmazon Price\tWalmart Name\tWalmart UPC\tWalmart ItemID\t`+
+    `Walmart Price\tLowestOfferPresent\tWeight Computed`+"\r\n";
+    paired_items_file.write(textLine);
     this.products.forEach(function(pairedProduct) {
       const amazonPrice = pairedProduct.amazonProd.lowestOfferInfo ? pairedProduct.amazonProd.lowestOfferInfo.lowestOfferInfo.Price.LandedPrice.Amount : pairedProduct.amazonProd.price;
-      textLine = `AMAZON NAME: ${pairedProduct.amazonProd.name}, ASIN: ${pairedProduct.amazonProd.ASIN}, AMAZON PRICE: ${amazonPrice}, ` + 
-        `WALMART NAME: ${pairedProduct.walmartProd.name}, WALMART PRICE: ${pairedProduct.walmartProd.price}` + "\r\n";
+      const lowestOfferInfo = pairedProduct.amazonProd.lowestOfferInfo ? 'Present' : 'Absent';
+      const weightComputed = pairedProduct.amazonProd.dimensions.weightComputed;
+      textLine = `${pairedProduct.amazonProd.name}\t${pairedProduct.amazonProd.ASIN}\t${pairedProduct.amazonProd.upc}\t${amazonPrice}\t` + 
+        `${pairedProduct.walmartProd.name}\t${pairedProduct.walmartProd.upc}\t${pairedProduct.walmartProd.itemId}\t${pairedProduct.walmartProd.price}\t` + 
+        `${lowestOfferInfo}\t${weightComputed}`+"\r\n";
       paired_items_file.write(textLine);
     });
-
     paired_items_file.end();
   }
 
