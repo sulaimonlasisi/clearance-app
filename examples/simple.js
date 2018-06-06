@@ -4,9 +4,16 @@ const AnalysisClient = require('../src/analysis/AnalysisClient');
 const PairedProductList = require('../src/PairedProductList');
 const RatingsClient = require('../src/ratings/RatingsClient');
 
+//get input parameters specified by user
+let analysisObj = {
+  minROI: process.argv[2],
+  minRatings: process.argv[3],
+  minNumReviews: process.argv[4]
+}
+
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
-  let analysisClient = new AnalysisClient();
+  let analysisClient = new AnalysisClient(analysisObj);
   walmart.client.getSpecialFeedItems().then(function(walmartProducts) {
     return walmartProducts;
   }).then(function (walmartProducts) {
@@ -43,12 +50,16 @@ function testAmazonProducts() {
     }).then(function (profitablePairedProductsList){
       let ratingsClient = new RatingsClient();
       console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
-      ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList).then((allRev) => {
-        let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(allRev);
-        console.log(`Returned Products Count After Ratings and Review Analysis: ${preferredAndPopularPairedProductsList.products.length}`);
-        preferredAndPopularPairedProductsList.writeToFile('paired_items.txt');
-      })
-      
+      if (profitablePairedProductsList.products.length > 0) {
+        ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList).then((allRev) => {
+          let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(allRev);
+          console.log(`Returned Products Count After Ratings and Review Analysis: ${preferredAndPopularPairedProductsList.products.length}`);
+          preferredAndPopularPairedProductsList.writeToFile('paired_items.tsv');
+        })
+      }
+      else {
+        console.log("No items to analyze ratings and reviews for");
+      }      
     })        
   })
 }
@@ -126,7 +137,6 @@ function getSpecialFeedsItems() {
     console.timeEnd('Special Feeds Performance');
   });
 }
-
 testAmazonProducts();
 //getSpecialFeedsItems();
 //getPaginatedSpecialFeeds();
