@@ -58,7 +58,6 @@ class RatingsClient {
     return new Promise(async (resolve, reject) => {
       let promises = [];
       let index=0;
-      let sliceEnd;
       const browser = await puppeteer.launch({headless:false});
       try {
         do {
@@ -87,7 +86,6 @@ class RatingsClient {
       let page = await browser.newPage();
       let item_link = `${this.base_url}${product.amazonProd.ASIN}`;
       await page.goto(item_link);
-      //debugger;
       //get rating value
       let rating = await page.evaluate(() => document.querySelector(".a-size-base.a-color-secondary").innerText);
       rating = this.parseRating(rating);

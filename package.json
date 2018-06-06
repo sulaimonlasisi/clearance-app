@@ -44,7 +44,6 @@
     }
   ],
   "dependencies": {
-    "amazon-product-api": "0.4.4",
     "bluebird": "^2.9.34",
     "dotenv": "^4.0.0",
     "isomorphic-fetch": "^2.1.1",
