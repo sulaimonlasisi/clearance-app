@@ -1,12 +1,9 @@
 const puppeteer = require('puppeteer');
 const Promise = require('bluebird');
 const PairedProductList = require('./../PairedProductList');
-require('events').EventEmitter.defaultMaxListeners = 200;
-
 /* Class that retrieves the ratings and review info for Amazon products
    This uses a hack that stands up a bare-bones chrome page for item ratings and review using
    the item's ASIN.
-   Had to settle for this since we needed to have a website to get to the Product Advertising API
 */
 class RatingsClient {
   /*
