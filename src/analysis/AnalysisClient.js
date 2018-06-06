@@ -13,18 +13,18 @@ class AnalysisClient {
       approxTaxRate - accounts for tax on item when purchasing from walmart
       effectiveValueOfOurDollar - because of sites like giftcardgranny.com and eBay, for every dollar we spend
       at walmart, we could actually be spending less e.g. 98 cents.
-      ROIThreshold - the cutoff ROI for items the item being considered
-      minRatingsValue - minimum average rating of the item being considered
-      minReviewsCount - minimum number of reviews of the item being considered
+      ROIThreshold - the cutoff ROI for items the item being considered e.g. 25
+      minRatingsValue - minimum average rating of the item being considered e.g. 3.0
+      minReviewsCount - minimum number of reviews of the item being considered e.g. 30
   */
-  constructor() {
+  constructor(analysisObj) {
     this.fbaShippingCostPerPound = 0.50; 
     this.approxTaxRate = 0.06;
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
-    this.ROIThreshold = 25;
-    this.minRatingsValue = 3.0;
-    this.minReviewsCount = 30;
+    this.ROIThreshold = parseInt(analysisObj.minROI);
+    this.minRatingsValue = parseFloat(analysisObj.minRatings);
+    this.minReviewsCount = parseInt(analysisObj.minNumReviews);
   }
 
   //returns the total amount paid to walmart when item is purchased
@@ -113,7 +113,6 @@ class AnalysisClient {
         `GCG PERCENT ROI: ${analyzedProductInfo.gCGPercentROI}, WEIGHT COMPUTED: ${analyzedProductInfo.isWeightComputed}`+"\r\n";
       analyzedItemsFile.write(textLine);
     });
-
     analyzedItemsFile.end();
   }
 
@@ -159,7 +158,6 @@ class AnalysisClient {
         }
       }
     });
-
     for (var category in categoriesRepWeight) {
       if (categoriesCount[category] >= representativeCount) {
         categoriesRepWeight[category] = Math.ceil(categoriesRepWeight[category]*representativeWeight);
@@ -187,15 +185,20 @@ class AnalysisClient {
     return categorizedItems;
   }
 
+  _printAnalysisParameters(){  
+    console.log(`Searching for items matching following criteria: Minimum ROI(%) - ${this.ROIThreshold}, Minimum Ratings - ${this.minRatingsValue},`
+      + ` Minimum Number of Reviews - ${this.minReviewsCount}`);
+  }
+
   /* does simple analysis of cost per item based on shipping and weight */
   getSimpleCostAnalysis(pairedProductsList) {
     let that = this;
+    that._printAnalysisParameters()
     //use representative weight of each category to assign weight values to items with unknown weights
     //this helps to compute their shipping price and see what is the profit potential for such items.
     let representativeWeights = that._assignRepresentativeWeightToItem(pairedProductsList);
     let analyzedProduct;
-    let profitablePairedProducts = new PairedProductList();
-       
+    let profitablePairedProducts = new PairedProductList();       
     pairedProductsList.products.forEach(function(pairedProduct){
       //if weight unknown, if we have computed_weight for category, assign it and set_flag 
       //there will be items whose category we don't have weight values for, let those slip through
@@ -211,17 +214,8 @@ class AnalysisClient {
       }
       if (analyzedProduct.basePercentROI >= that.ROIThreshold) {
         profitablePairedProducts.addPairedProduct(pairedProduct.amazonProd, pairedProduct.walmartProd);
-        //that.analyzedProductsInfo.push(analyzedProduct); -- not used here might be needed when writing stuff
       } 
     });
-
-
-    /* currently not used. Will be used after secondary analysis
-    let categorizedItems = this._filterProductsToCategories();
-    
-    //write all data into separate file for each category
-    //this._writeAllCategories(categorizedItems);
-    */
     return profitablePairedProducts;
   }
 
@@ -267,5 +261,4 @@ class AnalysisClient {
     return preferredAndPopularPairedProducts;
   }
 }
-
 module.exports = AnalysisClient;
