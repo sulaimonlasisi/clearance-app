@@ -5,7 +5,7 @@ const PairedProductList = require('../src/PairedProductList');
 const RatingsClient = require('../src/ratings/RatingsClient');
 
 //get input parameters specified by user
-let analysisObj = {
+let analysisParameters = {
   minROI: process.argv[2],
   minRatings: process.argv[3],
   minNumReviews: process.argv[4]
@@ -13,7 +13,7 @@ let analysisObj = {
 
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
-  let analysisClient = new AnalysisClient(analysisObj);
+  let analysisClient = new AnalysisClient(analysisParameters);
   walmart.client.getSpecialFeedItems().then(function(walmartProducts) {
     return walmartProducts;
   }).then(function (walmartProducts) {
