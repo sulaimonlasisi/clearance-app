@@ -4,11 +4,16 @@ const AnalysisClient = require('../src/analysis/AnalysisClient');
 const PairedProductList = require('../src/PairedProductList');
 const RatingsClient = require('../src/ratings/RatingsClient');
 
+const defaultMinROI = 30;
+const defaultMinRatings = 3.5;
+const defaultMinNumReviews = 30;
+
+
 //get input parameters specified by user
 let analysisParameters = {
-  minROI: process.argv[2],
-  minRatings: process.argv[3],
-  minNumReviews: process.argv[4]
+  minROI: process.argv[2] || defaultMinROI,
+  minRatings: process.argv[3] || defaultMinRatings,
+  minNumReviews: process.argv[4] || defaultMinNumReviews
 }
 
 function testAmazonProducts() {
