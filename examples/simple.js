@@ -11,9 +11,9 @@ const defaultMinNumReviews = 30;
 
 //get input parameters specified by user
 let analysisParameters = {
-  minROI: process.argv[2] || defaultMinROI,
-  minRatings: process.argv[3] || defaultMinRatings,
-  minNumReviews: process.argv[4] || defaultMinNumReviews
+  minROI: parseInt(process.argv[2]) || defaultMinROI,
+  minRatings: parseFloat(process.argv[3]) || defaultMinRatings,
+  minNumReviews: parseInt(process.argv[4]) || defaultMinNumReviews
 }
 
 function testAmazonProducts() {

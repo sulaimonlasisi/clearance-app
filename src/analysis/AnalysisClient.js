@@ -22,9 +22,9 @@ class AnalysisClient {
     this.approxTaxRate = 0.06;
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
-    this.ROIThreshold = parseInt(analysisParameters.minROI);
-    this.minRatingsValue = parseFloat(analysisParameters.minRatings);
-    this.minReviewsCount = parseInt(analysisParameters.minNumReviews);
+    this.ROIThreshold = analysisParameters.minROI;
+    this.minRatingsValue = analysisParameters.minRatings;
+    this.minReviewsCount = analysisParameters.minNumReviews;
   }
 
   //returns the total amount paid to walmart when item is purchased
