@@ -17,14 +17,14 @@ class AnalysisClient {
       minRatingsValue - minimum average rating of the item being considered e.g. 3.0
       minReviewsCount - minimum number of reviews of the item being considered e.g. 30
   */
-  constructor(analysisObj) {
+  constructor(analysisParameters) {
     this.fbaShippingCostPerPound = 0.50; 
     this.approxTaxRate = 0.06;
     this.analyzedProductsInfo = [];
     this.effectiveValueOfDollar = 0.98;
-    this.ROIThreshold = parseInt(analysisObj.minROI);
-    this.minRatingsValue = parseFloat(analysisObj.minRatings);
-    this.minReviewsCount = parseInt(analysisObj.minNumReviews);
+    this.ROIThreshold = parseInt(analysisParameters.minROI);
+    this.minRatingsValue = parseFloat(analysisParameters.minRatings);
+    this.minReviewsCount = parseInt(analysisParameters.minNumReviews);
   }
 
   //returns the total amount paid to walmart when item is purchased
