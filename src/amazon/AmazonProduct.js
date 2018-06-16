@@ -23,6 +23,7 @@ class AmazonProduct {
     this.upc = UPC ? UPC : 'UNKNOWN';
     this.category = product.AttributeSets['ns2:ItemAttributes']['ns2:ProductGroup'];
     this.lowestOfferInfo = null;
+    this.ratingsAndReviews = null;
   }
 
   // Returns a string of the basic product information.

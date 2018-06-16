@@ -2,10 +2,23 @@ const walmart = require('../src/walmart/index');
 const AmazonClient = require('../src/amazon/AmazonClient');
 const AnalysisClient = require('../src/analysis/AnalysisClient');
 const PairedProductList = require('../src/PairedProductList');
+const RatingsClient = require('../src/ratings/RatingsClient');
+
+const defaultMinROI = 30;
+const defaultMinRatings = 3.5;
+const defaultMinNumReviews = 30;
+
+
+//get input parameters specified by user
+let analysisParameters = {
+  minROI: parseInt(process.argv[2]) || defaultMinROI,
+  minRatings: parseFloat(process.argv[3]) || defaultMinRatings,
+  minNumReviews: parseInt(process.argv[4]) || defaultMinNumReviews
+}
 
 function testAmazonProducts() {
   let amazonClient = new AmazonClient();
-  let analysisClient = new AnalysisClient();
+  let analysisClient = new AnalysisClient(analysisParameters);
   walmart.client.getSpecialFeedItems().then(function(walmartProducts) {
     return walmartProducts;
   }).then(function (walmartProducts) {
@@ -37,11 +50,21 @@ function testAmazonProducts() {
   }).then(function (pairedProducts) {
     amazonClient.getLowestOfferListingsByASIN(pairedProducts).then(function(lowestOfferPairedProducts) {
       console.log(`Returned Products Count After LowestOfferListings Lookup: ${lowestOfferPairedProducts.products.length}`);
-      
       //secondary cost analysis eliminates items with lower than intended %ROI from list
-      let profitablePairedProductsList = analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);
+      return analysisClient.getSecondaryAnalysis(lowestOfferPairedProducts);      
+    }).then(function (profitablePairedProductsList){
+      let ratingsClient = new RatingsClient();
       console.log(`Returned Products Count After Secondary Cost Analysis: ${profitablePairedProductsList.products.length}`);
-      profitablePairedProductsList.writeToFile('paired_items.txt');
+      if (profitablePairedProductsList.products.length > 0) {
+        ratingsClient.getAllItemsRatingsAndReviews(profitablePairedProductsList).then((allRev) => {
+          let preferredAndPopularPairedProductsList = analysisClient.getPreferredAndPopularItems(allRev);
+          console.log(`Returned Products Count After Ratings and Review Analysis: ${preferredAndPopularPairedProductsList.products.length}`);
+          preferredAndPopularPairedProductsList.writeToFile('paired_items.tsv');
+        })
+      }
+      else {
+        console.log("No items to analyze ratings and reviews for");
+      }      
     })        
   })
 }
@@ -119,7 +142,6 @@ function getSpecialFeedsItems() {
     console.timeEnd('Special Feeds Performance');
   });
 }
-
 testAmazonProducts();
 //getSpecialFeedsItems();
 //getPaginatedSpecialFeeds();

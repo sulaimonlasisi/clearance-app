@@ -119,10 +119,16 @@ This sets your environment variables for authenticating api requests.
   ```
   npm start
   ```
-  Can also run example file directly with:
+  Can run example file directly with:
   ```
   node examples/simple.js
+  node examples/simple.js <minROI> <minRatings> <minNumReviews>
   ```
+  The first run usage uses default analysis parameters of 30%, 3.0 and 30. 
+  The second run usage will run the app and return items with a minimum ROI of 25%, minimum Amazon Rating of 3.0 and a minimum number of 30 reviews.
+
+  The output of a successful run is a .tsv file with all the items that meet the profit criteria in the parent directory.
+  
 
 ### Dependency Documentation
 * [Walmart Open API](https://developer.walmartlabs.com/docs/read/Special_Feeds)
